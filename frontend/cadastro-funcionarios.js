@@ -1,535 +1,423 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
-  const userCargo = sessionStorage.getItem('userCargo');
-  if (!userCargo || userCargo.trim() !== 'Administrador') {
-    alert('Acesso negado. Apenas gerentes podem acessar esta página.');
-    window.location.href = './menu.html';
-    return;
-  }
+// frontend/cadastro-funcionarios.js
 
-  try {
-    const active = document.querySelector('.navbar-links a[href*="cadastro-funcionarios.html"]');
-    if (active && active.parentElement) active.parentElement.classList.add('active');
-  } catch (_) {}
+const API_BASE = window.ApiClient ? window.ApiClient.getBaseUrl() : 'http://localhost:3000';
 
-  const cadastroForm = document.getElementById('cadastro-form');
-  const cpfInput = document.getElementById('cpf');
-  const telefoneInput = document.getElementById('telefone');
-  const usernameInput = document.getElementById('novo-username');
-  const nomeCompletoInput = document.getElementById('nome-completo');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('nova-senha');
-  const confirmPasswordInput = document.getElementById('confirmar-senha');
-  const cargoSelect = document.getElementById('novo-cargo');
-
-  const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v || '').trim());
-  const toDigits = (v) => (v || '').replace(/\D/g, '');
-  const isCPF = (v) => {
-    const s = toDigits(v);
-    if (!s || s.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(s)) return false;
-    const calc = (base) => {
-      let sum = 0; let weight = base.length + 1;
-      for (let i = 0; i < base.length; i++) sum += Number(base[i]) * (weight - i);
-      const mod = (sum * 10) % 11;
-      return mod === 10 ? 0 : mod;
-    };
-    const d1 = calc(s.slice(0, 9));
-    const d2 = calc(s.slice(0, 10));
-    return d1 === Number(s[9]) && d2 === Number(s[10]);
-  };
-
-  const clearAllErrors = () => {
-    [usernameInput, passwordInput, confirmPasswordInput, nomeCompletoInput, cpfInput, emailInput, telefoneInput].forEach((el) => {
-      if (!el) return;
-      const group = el.closest('.input-group');
-      if (group) group.classList.remove('error');
-      const fb = group ? group.querySelector('.input-feedback') : null;
-      if (fb) fb.textContent = '';
-    });
-  };
-  const markError = (el, message) => {
-    if (!el) return;
-    const group = el.closest('.input-group');
-    if (group) group.classList.add('error');
-    const fb = group ? group.querySelector('.input-feedback') : null;
-    if (fb) fb.textContent = message || 'Campo obrigatório';
-  };
-
-  const setupEyeToggles = () => {
-    document.querySelectorAll('.eye-toggle').forEach((btn) => {
-      const targetId = btn.getAttribute('data-target');
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      const setOpen = (open) => {
-        if (open) { target.type = 'text'; btn.classList.add('open'); btn.classList.remove('closed'); btn.setAttribute('aria-label', 'Ocultar senha'); btn.title = 'Ocultar senha'; }
-        else { target.type = 'password'; btn.classList.remove('open'); btn.classList.add('closed'); btn.setAttribute('aria-label', 'Mostrar senha'); btn.title = 'Mostrar senha'; }
-      };
-      setOpen(btn.classList.contains('open'));
-      btn.addEventListener('click', () => setOpen(!btn.classList.contains('open')));
-    });
-  };
-  setupEyeToggles();
-
-  if (cpfInput) {
-    cpfInput.addEventListener('input', (e) => {
-      let value = (e.target.value || '').replace(/\D/g, '');
-      if (value.length > 11) value = value.slice(0, 11);
-      value = value.replace(/(\d{3})(\d)/, '$1.$2');
-      value = value.replace(/(\d{3})(\d)/, '$1.$2');
-      value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-      e.target.value = value;
-      // Se perfil é Funcionário, sincroniza o nome de usuário e o preview
-      if (cargoSelect && cargoSelect.value === 'Funcionario') {
-        if (usernameInput) usernameInput.value = value;
-        const pvUser = document.getElementById('preview-username');
-        if (pvUser) pvUser.textContent = value || '-';
-      }
-    });
-  }
-  if (telefoneInput) {
-    telefoneInput.addEventListener('input', () => {
-      let valor = (telefoneInput.value || '').replace(/\D/g, '');
-      if (valor.length > 11) valor = valor.slice(0, 11);
-      valor = valor.replace(/^(\d{2})(\d)/, '($1) $2');
-      valor = valor.replace(/(\d{5})(\d)/, '$1-$2');
-      telefoneInput.value = valor;
-    });
-  }
-
-  const employeeListEl = document.getElementById('employee-list');
-  const employeeCountEl = document.getElementById('employee-count');
-  const employeeSearchEl = document.getElementById('employee-search');
-  const employeeFilterEl = document.getElementById('employee-filter');
-  const submitBtn = document.getElementById('submit-btn');
-
-  const renderEmployees = (items = []) => {
-  if (employeeCountEl) employeeCountEl.textContent = String(items.length || 0);
-  if (!employeeListEl) return;
-  if (!items.length) { employeeListEl.innerHTML = '<p>Nenhum funcionário encontrado.</p>'; return; }
-  const toDigits = (v) => (v || '').replace(/\D/g, '');
-  const fmtCPF = (v) => {
-    const d = toDigits(v);
-    if (d.length !== 11) return v || '-';
-    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
-  const fmtPhone = (v) => {
-    const d = toDigits(v);
-    if (d.length === 11) return d.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    if (d.length === 8) return d.replace(/(\d{4})(\d{4})/, '$1-$2');
-    return v || '-';
-  };
-    const html = items.map((u) => {
-      const nome = u.nomeCompleto || '-';
-      const user = u.username || '-';
-      const email = u.email || '-';
-      const tel = fmtPhone(u.telefone);
-      const cpf = fmtCPF(u.cpf);
-      const cargo = u.cargo || '-';
-      return `
-        <div class="employee-item">
-          <div class="employee-main"><strong>${nome}</strong><span>@${user}</span></div>
-          <div class="employee-meta"><span>${cargo}</span><span>${email}</span><span>${tel}</span><span>${cpf}</span></div>
-          <div class="employee-actions">
-            <button class="btn btn-edit" data-username="${user}" data-nome="${nome}" data-email="${email}" data-telefone="${u.telefone||''}" data-cpf="${u.cpf||''}" data-cargo="${cargo}">Editar</button>
-            <button class="btn btn-danger btn-delete" data-username="${user}">Excluir</button>
-          </div>
-        </div>`;
-    }).join('');
-    employeeListEl.innerHTML = html;
-  };
-
-  // Modal edit handlers
-  const editModal = document.getElementById('edit-modal-backdrop');
-  const editForm = document.getElementById('edit-employee-form');
-  const editCancelBtn = document.getElementById('edit-cancel');
-  const editNome = document.getElementById('edit-nome');
-  const editEmail = document.getElementById('edit-email');
-  const editTelefone = document.getElementById('edit-telefone');
-  const editCpf = document.getElementById('edit-cpf');
-  const editCargo = document.getElementById('edit-cargo');
-  const editPassword = document.getElementById('edit-password');
-  let editingUsername = null;
-
-  const openEditModal = (data) => {
-    editingUsername = data.username;
-    if (editNome) editNome.value = data.nomeCompleto || '';
-    if (editEmail) editEmail.value = data.email || '';
-    if (editTelefone) editTelefone.value = data.telefone || '';
-    if (editCpf) editCpf.value = data.cpf || '';
-    if (editCargo) editCargo.value = data.cargo || 'Funcionario';
-    if (editPassword) editPassword.value = '';
-    editModal?.classList.remove('hidden');
-  };
-  const closeEditModal = () => { editModal?.classList.add('hidden'); editingUsername = null; };
-  editCancelBtn?.addEventListener('click', (e)=>{ e.preventDefault(); closeEditModal(); });
-
-  // mask telefone/cpf in modal as user types
-  editTelefone?.addEventListener('input', () => {
-    let valor = (editTelefone.value || '').replace(/\D/g, '');
-    if (valor.length > 11) valor = valor.slice(0, 11);
-    if (valor.length >= 11) {
-      valor = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
-    } else if (valor.length >= 10) {
-      valor = valor.replace(/^(\d{2})(\d{4})(\d{4}).*/, '($1) $2-$3');
-    } else if (valor.length >= 8) {
-      valor = valor.replace(/^(\d{4})(\d{4}).*/, '$1-$2');
+// Bloqueia acesso para nÃ£o administradores
+(function enforceAdminOnly() {
+    const cargo = (sessionStorage.getItem('userCargo') || '').trim().toLowerCase();
+    const isAdmin = cargo === 'administrador' || cargo === 'gerente';
+    if (!isAdmin) {
+        alert('Apenas gerentes/administradores podem acessar o cadastro de funcionÃ¡rios.');
+        try { window.location.replace('menu.html'); } catch (_) { window.location.href = './menu.html'; }
     }
-    editTelefone.value = valor;
-  });
-  editCpf?.addEventListener('input', () => {
-    let v = (editCpf.value || '').replace(/\D/g, '');
-    if (v.length > 11) v = v.slice(0,11);
-    v = v.replace(/(\d{3})(\d)/, '$1.$2');
-    v = v.replace(/(\d{3})(\d)/, '$1.$2');
-    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    editCpf.value = v;
-  });
+})();
 
-  // Delegated actions: edit/delete
-  employeeListEl?.addEventListener('click', async (ev) => {
-    const btn = ev.target.closest('button');
-    if (!btn) return;
-    const username = btn.getAttribute('data-username');
-    if (!username) return;
-    if (btn.classList.contains('btn-delete')) {
-      if (!confirm(`Excluir funcionário @${username}?`)) return;
-      try {
-        if (!ApiClient.getBaseUrl()) { try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) {} }
-        const res = await ApiClient.fetch(`/users/${encodeURIComponent(username)}`, { method: 'DELETE', headers: { 'x-auth-token': sessionStorage.getItem('authToken') || '' } });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || 'Falha ao excluir.');
-        }
-        try { showToast('Funcionário excluído.'); } catch(_){}
-        reloadEmployeeList();
-      } catch (e) { try { showToast(e.message || 'Erro ao excluir.', 'error'); } catch(_){} }
-      return;
+// --- ELEMENTOS ---
+const form = document.getElementById('form-cadastro');
+const step1 = document.getElementById('step-1');
+const step2 = document.getElementById('step-2');
+const stepIndicator1 = document.getElementById('step-indicator-1');
+const stepIndicator2 = document.getElementById('step-indicator-2');
+
+const nomeInput = document.getElementById('nome');
+const cpfInput = document.getElementById('cpf');
+const telefoneInput = document.getElementById('telefone');
+const emailInput = document.getElementById('email');
+const cargoSelect = document.getElementById('cargo');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const confirmPasswordInput = document.getElementById('confirm-password');
+
+const btnProximo = document.getElementById('btn-proximo');
+const btnVoltar = document.getElementById('btn-voltar');
+const btnLimpar = document.getElementById('btn-limpar');
+const togglePassBtn = document.getElementById('toggle-pass');
+const toggleConfirmPassBtn = document.getElementById('toggle-confirm-pass');
+
+// Preview e Listagem
+const prevNome = document.getElementById('prev-nome');
+const prevUser = document.getElementById('prev-user');
+const prevCpf = document.getElementById('prev-cpf');
+const prevCargo = document.getElementById('prev-cargo');
+const prevEmail = document.getElementById('prev-email');
+const prevTelefone = document.getElementById('prev-telefone');
+
+const tabelaBody = document.querySelector('#tabela-funcionarios tbody');
+const totalSpan = document.getElementById('total-funcionarios');
+const searchInput = document.getElementById('search-input');
+const filterCargo = document.getElementById('filter-cargo');
+const statusDiv = document.getElementById('mensagem-status');
+const getAuthToken = () => sessionStorage.getItem('authToken') || sessionStorage.getItem('token') || '';
+
+// Paginação
+const btnPrevPage = document.getElementById('btn-prev-page');
+const btnNextPage = document.getElementById('btn-next-page');
+const pageInfoSpan = document.getElementById('page-info');
+
+// VARIÁVEIS GLOBAIS
+let isEditing = false;
+let editingUsername = null;
+let allUsersData = []; // Lista completa vinda do banco
+let currentPage = 1;
+const ITEMS_PER_PAGE = 3; // Limite por página
+
+// --- 1. MÁSCARAS ---
+const masks = {
+    cpf(value) {
+        return value.replace(/\D/g, '')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
+    },
+    phone(value) {
+        return value.replace(/\D/g, '')
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{4,5})(\d{4})/, '$1-$2')
+            .replace(/(-\d{4})\d+?$/, '$1');
     }
-    if (btn.classList.contains('btn-edit')) {
-      const data = {
-        username,
-        nomeCompleto: btn.getAttribute('data-nome') || '',
-        email: btn.getAttribute('data-email') || '',
-        telefone: btn.getAttribute('data-telefone') || '',
-        cpf: btn.getAttribute('data-cpf') || '',
-        cargo: btn.getAttribute('data-cargo') || 'Funcionario'
-      };
-      openEditModal(data);
-    }
-  });
+};
 
-  editForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!editingUsername) return closeEditModal();
-    const body = {
-      nomeCompleto: editNome?.value?.trim() || '',
-      email: editEmail?.value?.trim() || '',
-      telefone: editTelefone?.value?.trim() || '',
-      cpf: editCpf?.value?.trim() || '',
-      cargo: editCargo?.value || 'Funcionario'
-    };
-    const pw = editPassword?.value?.trim();
-    if (pw && pw.length >= 6) body.password = pw;
-    try {
-      if (!ApiClient.getBaseUrl()) { try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) {} }
-      const res = await ApiClient.fetch(`/users/${encodeURIComponent(editingUsername)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-auth-token': sessionStorage.getItem('authToken') || '' },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Falha ao atualizar.');
-      try { showToast('Funcionário atualizado.'); } catch(_){}
-      closeEditModal();
-      reloadEmployeeList();
-    } catch (err) {
-      try { showToast(err.message || 'Erro ao atualizar.', 'error'); } catch(_){}
-    }
-  });
-
-  const loadLocalEmployees = () => {
-    try { const list = JSON.parse(localStorage.getItem('employees') || '[]'); return { total: list.length, results: list }; }
-    catch (_) { return { total: 0, results: [] }; }
-  };
-
-  const fetchEmployeesFromServer = async (params = {}) => {
-    const token = sessionStorage.getItem('authToken') || '';
-    const q = new URLSearchParams(params);
-    const response = await ApiClient.fetch(`/users?${q.toString()}`, { method: 'GET', headers: { 'x-auth-token': token } });
-    if (!response.ok) throw new Error('Falha ao buscar funcionários.');
-    const data = await response.json();
-    // Normaliza diferentes formatos possíveis do backend
-    if (data && Array.isArray(data.results)) {
-      return { total: data.total ?? data.results.length, results: data.results };
-    }
-    if (Array.isArray(data)) {
-      if (data.length && typeof data[0] === 'string') {
-        // Apenas usernames
-        return { total: data.length, results: data.map(u => ({ username: String(u || '') })) };
-      }
-      // Array de objetos
-      return { total: data.length, results: data };
-    }
-    return { total: 0, results: [] };
-  };
-
-  // Tries to read backend database.json directly (as requested)
-  const getServerRootBase = async () => {
-    try {
-      if (!ApiClient.getBaseUrl()) {
-        try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) {}
-      }
-      const base = ApiClient.getBaseUrl();
-      if (!base) return null;
-      // strip trailing /api
-      return String(base).replace(/\/api\/?$/, '');
-    } catch (_) { return null; }
-  };
-
-  const fetchEmployeesFromDatabaseFile = async () => {
-    const candidates = [];
-    const root = await getServerRootBase();
-    if (root) {
-      candidates.push(`${root}/database.json`);
-      candidates.push(`${root}/backend/database.json`);
-    }
-    // Also try relative paths from the current page (works if served by a static server at repo root)
-    const here = window.location.pathname || '';
-    if (here.includes('/frontend/')) {
-      candidates.push('../backend/database.json');
-      candidates.push('/backend/database.json');
-      candidates.push('/database.json');
-    } else {
-      candidates.push('backend/database.json');
-      candidates.push('database.json');
-    }
-
-    let lastError = null;
-    for (const url of candidates) {
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) { lastError = new Error(`HTTP ${res.status}`); continue; }
-        const contentType = res.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-          // still try to parse to be resilient
-        }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          // Map to expected shape
-          const results = data.map((u) => ({
-            username: u.username || '',
-            cargo: u.cargo || '',
-            nomeCompleto: u.nomeCompleto || u.username || '',
-            email: u.email || '',
-            telefone: u.telefone || '',
-            cpf: u.cpf || ''
-          }));
-          return { total: results.length, results };
-        }
-      } catch (e) { lastError = e; }
-    }
-    if (lastError) throw lastError;
-    return { total: 0, results: [] };
-  };
-
-  const reloadEmployeeList = async () => {
-    let results = [];
-    try {
-      // Tenta primeiro ler diretamente o database.json (pedido do usuário)
-      let data;
-      try {
-        data = await fetchEmployeesFromDatabaseFile();
-      } catch (_) {
-        data = null;
-      }
-      // Se falhar, tenta a rota /users
-      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
-        const params = {};
-        if (employeeSearchEl && employeeSearchEl.value) params.search = employeeSearchEl.value;
-        if (employeeFilterEl && employeeFilterEl.value && employeeFilterEl.value !== 'all') params.cargo = employeeFilterEl.value;
-        if (!ApiClient.getBaseUrl()) { try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) {} }
-        data = await fetchEmployeesFromServer(params);
-      }
-      results = Array.isArray(data.results) ? data.results : [];
-    } catch (_) {
-      const local = loadLocalEmployees();
-      results = local.results || [];
-      const term = (employeeSearchEl && employeeSearchEl.value || '').trim().toLowerCase();
-      const role = employeeFilterEl && employeeFilterEl.value;
-      if (term) {
-        results = results.filter((e) => {
-          const values = [e.username, e.nomeCompleto, e.email, e.telefone, e.cpf].map(v => (v || '').toLowerCase());
-          return values.some(v => v.includes(term));
-        });
-      }
-      if (role && role !== 'all') { results = results.filter((e) => (e.cargo || '').toLowerCase() === role.toLowerCase()); }
-    }
-    renderEmployees(results);
-  };
-
-  if (employeeSearchEl) employeeSearchEl.addEventListener('input', reloadEmployeeList);
-  if (employeeFilterEl) employeeFilterEl.addEventListener('change', reloadEmployeeList);
-
-  const saveLocalEmployee = (entry) => {
-    try {
-      const key = 'employees';
-      const list = JSON.parse(localStorage.getItem(key) || '[]');
-      const now = new Date().toISOString();
-      const newEntry = { id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, ...entry, createdAt: now };
-      list.push(newEntry);
-      localStorage.setItem(key, JSON.stringify(list));
-      return true;
-    } catch (_) { return false; }
-  };
-
-  // Preview helpers
-  const setPreview = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value || '-'; };
-  const maskCPF = (digits) => {
-    const d = toDigits(digits).slice(0, 11);
-    if (d.length !== 11) return digits || '';
-    return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-  };
-
-  const syncUsernameWithCPFIfNeeded = () => {
-    if (!cargoSelect || cargoSelect.value !== 'Funcionario') return;
-    if (!cpfInput) return;
-    const value = cpfInput.value || '';
-    if (usernameInput) usernameInput.value = value;
-    setPreview('preview-username', value ? value : '-');
-  };
-
-  // Real-time preview updates
-  nomeCompletoInput?.addEventListener('input', () => setPreview('preview-nome', nomeCompletoInput.value.trim()));
-  usernameInput?.addEventListener('input', () => setPreview('preview-username', usernameInput.value.trim()));
-  cpfInput?.addEventListener('input', () => setPreview('preview-cpf', maskCPF(cpfInput.value)));
-  emailInput?.addEventListener('input', () => setPreview('preview-email', emailInput.value.trim()));
-  telefoneInput?.addEventListener('input', () => setPreview('preview-telefone', telefoneInput.value.trim()));
-
-  // Cargo change affects username behavior
-  cargoSelect?.addEventListener('change', () => {
-    const isFunc = cargoSelect.value === 'Funcionario';
-    if (usernameInput) {
-      usernameInput.readOnly = isFunc;
-      usernameInput.placeholder = isFunc ? 'Usará o CPF automaticamente' : 'Mín. 3 caracteres';
-    }
-    const pvCargo = document.getElementById('preview-cargo');
-    if (pvCargo) pvCargo.textContent = cargoSelect.value || '-';
-    if (isFunc) syncUsernameWithCPFIfNeeded();
-  });
-  // Initial state for username field
-  if (cargoSelect && cargoSelect.value === 'Funcionario' && usernameInput) {
-    usernameInput.readOnly = true;
-    usernameInput.placeholder = 'Usará o CPF automaticamente';
-  }
-
-  // Check username availability on blur
-  const checkUsernameAvailability = async (value) => {
-    const v = (value || '').trim();
-    if (!v) return { ok: false, reason: 'Informe um usuário.' };
-    try {
-      const response = await ApiClient.fetch('/users/usernames', { headers: { 'x-auth-token': sessionStorage.getItem('authToken') || '' } });
-      if (!response.ok) return { ok: true };
-      const list = await response.json().catch(() => []);
-      const exists = Array.isArray(list) && list.some(u => String(u || '').toLowerCase() === v.toLowerCase());
-      return exists ? { ok: false, reason: 'Este nome de usuário já está em uso.' } : { ok: true };
-    } catch (_) { return { ok: true }; }
-  };
-  usernameInput?.addEventListener('blur', async () => {
-    if (cargoSelect?.value === 'Funcionario') return; // CPF-based, skip
-    const res = await checkUsernameAvailability(usernameInput.value);
-    const group = usernameInput.closest('.input-group');
-    group?.classList.remove('valid', 'invalid');
-    if (!res.ok) { group?.classList.add('invalid'); markError(usernameInput, res.reason); }
-    else { const fb = group?.querySelector('.input-feedback'); if (fb) fb.textContent = ''; }
-  });
-
-  if (cadastroForm) {
-    cadastroForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      clearAllErrors();
-
-      const cargo = cargoSelect ? cargoSelect.value : 'Funcionario';
-      let username = usernameInput ? usernameInput.value.trim() : '';
-      const password = passwordInput ? passwordInput.value : '';
-      const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
-      const nomeCompleto = nomeCompletoInput ? nomeCompletoInput.value : '';
-      const cpfValue = cpfInput ? cpfInput.value : '';
-      const cpfDigits = toDigits(cpfValue);
-      const email = emailInput ? emailInput.value : '';
-      const telefone = telefoneInput ? telefoneInput.value : '';
-
-      let errorCount = 0; let firstError = null;
-      if (!nomeCompleto.trim()) { markError(nomeCompletoInput, 'Informe o nome completo.'); firstError = firstError || nomeCompletoInput; errorCount++; }
-      if (!cpfDigits) { markError(cpfInput, 'Informe o CPF.'); firstError = firstError || cpfInput; errorCount++; }
-      else if (!isCPF(cpfDigits)) { markError(cpfInput, 'CPF inválido.'); firstError = firstError || cpfInput; errorCount++; }
-      if (!email.trim()) { markError(emailInput, 'Informe o email.'); firstError = firstError || emailInput; errorCount++; }
-      else if (!isEmail(email)) { markError(emailInput, 'Email inválido.'); firstError = firstError || emailInput; errorCount++; }
-      if (!telefone.trim()) { markError(telefoneInput, 'Informe o telefone.'); firstError = firstError || telefoneInput; errorCount++; }
-      if (!password) { markError(passwordInput, 'Informe a senha.'); firstError = firstError || passwordInput; errorCount++; }
-      else if (password.length < 6) { markError(passwordInput, 'A senha deve ter pelo menos 6 caracteres.'); firstError = firstError || passwordInput; errorCount++; }
-      if (!confirmPassword) { markError(confirmPasswordInput, 'Confirme a senha.'); firstError = firstError || confirmPasswordInput; errorCount++; }
-      else if (password !== confirmPassword) { markError(confirmPasswordInput, 'As senhas não coincidem.'); firstError = firstError || confirmPasswordInput; errorCount++; }
-
-      if (cargo === 'Funcionario') {
-        if (!username) { username = cpfValue; if (usernameInput) usernameInput.value = username; }
-      } else {
-        if (!username || username.trim().length < 3) { markError(usernameInput, 'Informe um usuário (mín. 3 caracteres).'); firstError = firstError || usernameInput; errorCount++; }
-      }
-
-      if (errorCount > 0) {
-        try { showToast(`Preencha corretamente os campos (${errorCount} erro${errorCount>1?'s':''}).`, 'error'); } catch (_) {}
-        if (firstError && typeof firstError.focus === 'function') firstError.focus();
-        return;
-      }
-
-      if (cargo === 'Funcionario') { username = cpfValue; if (usernameInput) usernameInput.value = username; }
-
-      const payload = { username, password, cargo, nomeCompleto: nomeCompleto.trim(), cpf: cpfValue, email: email.trim(), telefone: telefone.trim() };
-
-      let saved = false;
-      const setSubmitting = (on) => { try { if (submitBtn) submitBtn.disabled = !!on; } catch (_) {} };
-      setSubmitting(true);
-      try {
-        if (!ApiClient.getBaseUrl()) { try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) {} }
-        const response = await ApiClient.fetch('/register', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-auth-token': sessionStorage.getItem('authToken') || '' }, body: JSON.stringify(payload) });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          const msg = String(data.message || '').toLowerCase();
-          if (msg.includes('usuário') && msg.includes('uso')) markError(usernameInput, data.message);
-          if (msg.includes('cpf')) markError(cpfInput, data.message);
-          if (msg.includes('email')) markError(emailInput, data.message);
-          throw new Error(data.message || 'Não foi possível cadastrar no servidor.');
-        }
-        saved = true;
-      } catch (error) {
-        const local = saveLocalEmployee({ ...payload, cpf: cpfDigits });
-        if (local) { try { showToast('Sem conexão com o servidor. Cadastro salvo localmente.', 'error'); } catch (_) {} saved = true; }
-        else { try { showToast(error.message || 'Falha ao cadastrar.', 'error'); } catch (_) {} }
-      } finally { setSubmitting(false); }
-
-      if (saved) {
-        try { showToast('Funcionário cadastrado com sucesso!'); } catch (_) {}
-        cadastroForm.reset();
-        if (usernameInput) usernameInput.value = '';
-        const pv = (id) => document.getElementById(id);
-        ['preview-username','preview-cpf','preview-nome','preview-email','preview-telefone'].forEach(k => { const el = pv(k); if (el) el.textContent = '-'; });
-        reloadEmployeeList();
-      }
-    });
-  }
-
-  document.getElementById('reset-btn')?.addEventListener('click', (ev) => {
-    ev.preventDefault();
-    [usernameInput, passwordInput, confirmPasswordInput, nomeCompletoInput, cpfInput, emailInput, telefoneInput].forEach((el) => { if (el) el.value = ''; });
-    clearAllErrors();
-    const pv = (id) => document.getElementById(id);
-    ['preview-username','preview-cpf','preview-nome','preview-email','preview-telefone'].forEach((k) => { const el = pv(k); if (el) el.textContent = '-'; });
-  });
-
-  reloadEmployeeList();
-  // Ensure initial username preview state for Funcionário
-  syncUsernameWithCPFIfNeeded();
+cpfInput.addEventListener('input', (e) => {
+    e.target.value = masks.cpf(e.target.value);
+    atualizarPreview();
+    sincronizarUsuarioComCpf();
+});
+telefoneInput.addEventListener('input', (e) => {
+    e.target.value = masks.phone(e.target.value);
+    atualizarPreview();
+});
+[nomeInput, emailInput, usernameInput].forEach(input => {
+    input.addEventListener('input', atualizarPreview);
 });
 
+// --- 2. LÓGICA VISUAL ---
+function atualizarPreview() {
+    prevNome.textContent = nomeInput.value || '-';
+    prevCpf.textContent = cpfInput.value || '-';
+    prevEmail.textContent = emailInput.value || '-';
+    prevTelefone.textContent = telefoneInput.value || '-';
+    prevUser.textContent = usernameInput.value || '-';
 
+    const isManager = cargoSelect.value === 'Administrador';
+    prevCargo.textContent = isManager ? 'Gerente' : 'Funcionário';
+    prevCargo.className = isManager ? 'badge badge-admin' : 'badge badge-func';
+}
+
+function toggleVisibility(input, icon) {
+    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+    input.setAttribute('type', type);
+    icon.classList.toggle('fa-eye');
+    icon.classList.toggle('fa-eye-slash');
+}
+
+togglePassBtn.addEventListener('click', () => toggleVisibility(passwordInput, togglePassBtn));
+toggleConfirmPassBtn.addEventListener('click', () => toggleVisibility(confirmPasswordInput, toggleConfirmPassBtn));
+
+cargoSelect.addEventListener('change', () => {
+    atualizarPreview();
+    sincronizarUsuarioComCpf();
+});
+
+function sincronizarUsuarioComCpf() {
+    const isGerente = cargoSelect.value === 'Administrador';
+    const cpfLimpo = cpfInput.value.replace(/\D/g, '');
+
+    if (!isGerente) {
+        usernameInput.value = cpfLimpo;
+        usernameInput.setAttribute('readonly', true);
+        document.getElementById('username-hint').textContent = 'Login travado no CPF para funcionários.';
+    } else {
+        usernameInput.removeAttribute('readonly');
+        document.getElementById('username-hint').textContent = 'Gerentes podem personalizar o login.';
+        if (usernameInput.value === cpfLimpo) usernameInput.value = '';
+    }
+    document.getElementById('prev-user').textContent = usernameInput.value || '-';
+}
+
+// --- 3. WIZARD ---
+function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf == '') return false;
+    if (cpf.length != 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let add = 0;
+    for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+    let rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(9))) return false;
+    add = 0;
+    for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(10))) return false;
+    return true;
+}
+
+btnProximo.addEventListener('click', () => {
+    if (!nomeInput.value || !cpfInput.value || !emailInput.value || !telefoneInput.value) {
+        mostrarMensagem('Preencha todos os campos da Etapa 1.', 'error');
+        return;
+    }
+    if (!validarCPF(cpfInput.value)) {
+        mostrarMensagem('CPF inválido.', 'error');
+        cpfInput.focus();
+        return;
+    }
+    step1.classList.add('hidden');
+    step2.classList.remove('hidden');
+    stepIndicator1.classList.remove('active');
+    stepIndicator2.classList.add('active');
+    mostrarMensagem('', 'hidden');
+    sincronizarUsuarioComCpf();
+});
+
+btnVoltar.addEventListener('click', () => {
+    step2.classList.add('hidden');
+    step1.classList.remove('hidden');
+    stepIndicator2.classList.remove('active');
+    stepIndicator1.classList.add('active');
+});
+
+btnLimpar.addEventListener('click', () => {
+    form.reset();
+    isEditing = false;
+    editingUsername = null;
+    sincronizarUsuarioComCpf();
+    atualizarPreview();
+    btnVoltar.click();
+    mostrarMensagem('', 'hidden');
+});
+
+function mostrarMensagem(texto, tipo) {
+    statusDiv.textContent = texto;
+    statusDiv.className = `status-box ${tipo}`;
+    if (tipo === 'hidden') statusDiv.classList.add('hidden');
+    else statusDiv.classList.remove('hidden');
+}
+
+// --- 4. INTEGRAÇÃO E PAGINAÇÃO ---
+
+async function carregarFuncionarios() {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.warn("Sem token de autenticação.");
+            return;
+        }
+
+        const response = await ApiClient.fetch('/api/users', {
+            headers: { 'x-auth-token': token }
+        });
+
+        if (response.status === 403) {
+            mostrarMensagem('Acesso negado: Apenas gerentes podem ver a lista.', 'error');
+            allUsersData = [];
+            renderizarTabela();
+            return;
+        }
+
+        if (!response.ok) throw new Error('Erro ao buscar lista.');
+
+        const data = await response.json();
+
+        // CORREÇÃO CRÍTICA: O server antigo retorna { results: [...] }
+        // O código agora verifica onde o array está.
+        if (Array.isArray(data)) {
+            allUsersData = data;
+        } else if (data.results && Array.isArray(data.results)) {
+            allUsersData = data.results;
+        } else {
+            allUsersData = [];
+        }
+
+        // Se houver dados no database.json, eles aparecerão agora
+        console.log("Funcionários carregados:", allUsersData);
+
+        currentPage = 1;
+        renderizarTabela();
+
+    } catch (error) {
+        console.error(error);
+        renderizarTabela(); // Renderiza vazio
+    }
+}
+
+function renderizarTabela() {
+    tabelaBody.innerHTML = '';
+
+    const termo = searchInput.value.toLowerCase();
+    const filtroPerfil = filterCargo.value;
+
+    const filtrados = allUsersData.filter(user => {
+        const matchTexto =
+            (user.nomeCompleto || '').toLowerCase().includes(termo) ||
+            (user.username || '').toLowerCase().includes(termo) ||
+            (user.cpf || '').includes(termo);
+
+        const cargoUser = user.cargo || 'Funcionario';
+        let matchPerfil = true;
+        if (filtroPerfil === 'Administrador') {
+            matchPerfil = cargoUser === 'Administrador' || cargoUser === 'Gerente';
+        } else if (filtroPerfil === 'Funcionario') {
+            matchPerfil = cargoUser === 'Funcionario';
+        }
+
+        return matchTexto && matchPerfil;
+    });
+
+    document.getElementById('total-funcionarios').textContent = filtrados.length;
+
+    // Paginação
+    const totalPages = Math.ceil(filtrados.length / ITEMS_PER_PAGE) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const pageData = filtrados.slice(startIndex, endIndex);
+
+    pageData.forEach(user => {
+        const tr = document.createElement('tr');
+        const isAdmin = user.cargo === 'Administrador' || user.cargo === 'Gerente';
+
+        tr.innerHTML = `
+            <td class="user-cell">
+                <div style="font-weight:bold; font-size:1rem;">${user.nomeCompleto || user.username}</div>
+                <span class="${isAdmin ? 'badge-admin' : 'badge-func'} badge badge-mini">
+                    ${isAdmin ? 'Gerente' : 'Func.'}
+                </span>
+                <small style="color:#888; margin-left:5px;">${user.username}</small>
+            </td>
+            <td style="text-align:right;">
+                <button class="btn-icon btn-edit" onclick="editarUsuario('${user.username}')" title="Editar">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="btn-icon btn-delete" onclick="excluirUsuario('${user.username}')" title="Excluir">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        `;
+        tabelaBody.appendChild(tr);
+    });
+
+    pageInfoSpan.textContent = `Pág ${currentPage} de ${totalPages}`;
+    btnPrevPage.disabled = currentPage === 1;
+    btnNextPage.disabled = currentPage === totalPages;
+}
+
+btnPrevPage.addEventListener('click', () => {
+    if (currentPage > 1) {
+        currentPage--;
+        renderizarTabela();
+    }
+});
+btnNextPage.addEventListener('click', () => {
+    // Recalcula para garantir
+    const filtrados = allUsersData.length; // Simplificação, ideal filtrar de novo
+    renderizarTabela(); // A função renderizar já trata a lógica correta
+    if (!btnNextPage.disabled) currentPage++;
+    renderizarTabela();
+});
+
+searchInput.addEventListener('input', () => { currentPage = 1; renderizarTabela(); });
+filterCargo.addEventListener('change', () => { currentPage = 1; renderizarTabela(); });
+
+// --- 5. AÇÕES ---
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (passwordInput.value !== confirmPasswordInput.value) {
+        mostrarMensagem('As senhas não coincidem.', 'error');
+        return;
+    }
+
+    const payload = {
+        nomeCompleto: nomeInput.value,
+        cpf: cpfInput.value.replace(/\D/g, ''),
+        email: emailInput.value,
+        telefone: telefoneInput.value.replace(/\D/g, ''),
+        cargo: cargoSelect.value,
+        username: usernameInput.value,
+        password: passwordInput.value
+    };
+
+    const token = getAuthToken();
+
+    try {
+        let url = '/api/register';
+        let method = 'POST';
+
+        if (isEditing) {
+            // Se o backend antigo não suportar PUT, talvez precise deletar e recriar.
+            // Vamos tentar o PUT, se falhar (404), avisamos.
+            url = `/api/users/${editingUsername}`;
+            method = 'PUT';
+        }
+
+        const response = await ApiClient.fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'x-auth-token': token
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            mostrarMensagem(result.message || 'Salvo com sucesso!', 'success');
+            btnLimpar.click();
+            carregarFuncionarios();
+        } else {
+            mostrarMensagem(result.message || 'Erro ao salvar.', 'error');
+        }
+    } catch (error) {
+        mostrarMensagem('Erro de conexão.', 'error');
+    }
+});
+
+window.editarUsuario = (username) => {
+    const user = allUsersData.find(u => u.username === username);
+    if (!user) return;
+
+    nomeInput.value = user.nomeCompleto || '';
+    cpfInput.value = user.cpf ? masks.cpf(user.cpf) : '';
+    telefoneInput.value = user.telefone ? masks.phone(user.telefone) : '';
+    emailInput.value = user.email || '';
+
+    const isAdmin = user.cargo === 'Administrador' || user.cargo === 'Gerente';
+    cargoSelect.value = isAdmin ? 'Administrador' : 'Funcionario';
+
+    usernameInput.value = user.username;
+    isEditing = true;
+    editingUsername = user.username;
+
+    sincronizarUsuarioComCpf();
+    atualizarPreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    btnVoltar.click();
+    mostrarMensagem(`Editando: ${user.nomeCompleto}`, 'success');
+};
+
+window.excluirUsuario = async (username) => {
+    if (!confirm(`Excluir ${username}?`)) return;
+    const token = getAuthToken();
+    try {
+        const response = await ApiClient.fetch(`/api/users/${username}`, {
+            method: 'DELETE',
+            headers: { 'x-auth-token': token }
+        });
+        if (response.ok) {
+            mostrarMensagem('Usuário excluído.', 'success');
+            carregarFuncionarios();
+        } else {
+            mostrarMensagem('Erro ao excluir.', 'error');
+        }
+    } catch (e) { mostrarMensagem('Erro de conexão.', 'error'); }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    carregarFuncionarios();
+    atualizarPreview();
+});

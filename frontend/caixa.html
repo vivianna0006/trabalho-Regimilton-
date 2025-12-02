@@ -1,38 +1,145 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caixa - Styllo Fashion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="componentes.css">
     <link rel="stylesheet" href="notifications.css">
     <link rel="stylesheet" href="caixa.css">
 </head>
+
 <body>
     <header>
         <nav></nav>
     </header>
     <main class="main-content caixa-content">
-        <h1>Registro de Venda</h1>
+        <section class="caixa-hero">
+            <div class="caixa-hero__text">
+                <span class="eyebrow">Caixa rapido</span>
+                <div class="caixa-hero__title">
+                    <h1>Registro de Venda</h1>
+                    <span class="pill pill--soft">Fluxo ativo</span>
+                </div>
+                <p class="hero-lead">Monte a venda, acompanhe o troco e finalize sem sair da tela.</p>
+            </div>
+            <div class="caixa-hero__metrics">
+                <div class="metric-card">
+                    <span class="label">Itens na venda</span>
+                    <strong id="resumo-itens" data-total-itens-label>0 itens</strong>
+                </div>
+                <div class="metric-card metric-card--accent">
+                    <span class="label">Total previsto</span>
+                    <strong id="resumo-total" data-total-valor>R$ 0,00</strong>
+                    <small>Atualizado conforme os itens</small>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Troco previsto</span>
+                    <strong id="resumo-troco" data-troco-previsto>R$ 0,00</strong>
+                    <small id="resumo-troco-hint" data-troco-hint>Aguardando valor recebido</small>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Troco no caixa</span>
+                    <strong id="troco-total">R$ 0,00</strong>
+                    <small>Soma de suprimento + trocos guardados</small>
+                </div>
+            </div>
+        </section>
         <div class="caixa-page">
             <section class="caixa-section caixa-section--venda">
-                <h2>Venda Atual</h2>
-                <div id="lista-venda" class="caixa-lista caixa-lista--venda"></div>
-                <div class="caixa-total-acoes">
-                    <span id="total-venda">Total: R$ 0,00</span>
-                    <button id="finalizar-venda-btn" type="button">Finalizar Venda</button>
-                </div>  
-            </section>   
-
-            <section class="caixa-section caixa-section--busca">
-                <h2>Buscar Produto</h2>
-                <div class="input-group">
-                    <input type="text" id="busca-produto" placeholder="Digite o código ou nome do produto...">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Carrinho</p>
+                        <h2>Venda atual</h2>
+                        <p class="section-subtitle">Revise os itens e ja veja o troco antes de finalizar.</p>
+                    </div>
+                    <div class="section-pills" aria-live="polite">
+                        <span class="pill">
+                            <small>Itens</small>
+                            <strong data-total-itens-num>0</strong>
+                        </span>
+                        <span class="pill pill--solid">
+                            <small>Total</small>
+                            <strong data-total-valor>R$ 0,00</strong>
+                        </span>
+                    </div>
                 </div>
-                <div id="lista-produtos" class="caixa-lista caixa-lista--produtos"></div>
-            </section>  
+                <div class="list-header">
+                    <span>Item</span>
+                    <span>Valor</span>
+                    <span class="sr-only">Acoes</span>
+                </div>
+                <div id="lista-venda" class="caixa-lista caixa-lista--venda" aria-live="polite"></div>
+                <div class="caixa-total-acoes">
+                    <div class="total-display">
+                        <div>
+                            <p>Total da venda</p>
+                            <strong id="total-venda" data-total-valor>R$ 0,00</strong>
+                        </div>
+                        <div class="total-itens" aria-live="polite">
+                            <span>Itens</span>
+                            <strong data-total-itens-num>0</strong>
+                        </div>
+                    </div>
+                    <div class="troco-form">
+                        <div class="troco-field">
+                            <label for="forma-pagamento">Forma de pagamento</label>
+                            <select id="forma-pagamento">
+                                <option value="dinheiro" selected>Dinheiro</option>
+                                <option value="cartao_credito">Cartao credito</option>
+                                <option value="cartao_debito">Cartao debito</option>
+                                <option value="pix">Pix</option>
+                            </select>
+                        </div>
+                        <div class="troco-field">
+                            <label for="valor-recebido">Valor recebido</label>
+                            <input type="text" id="valor-recebido" inputmode="decimal" placeholder="0,00" autocomplete="off">
+                        </div>
+                        <div class="troco-field">
+                            <label for="valor-troco">Troco entregue</label>
+                            <input type="text" id="valor-troco" inputmode="decimal" placeholder="0,00" autocomplete="off">
+                        </div>
+                        <div class="troco-field troco-field--preview">
+                            <label>Troco previsto</label>
+                            <div class="troco-preview">
+                                <strong data-troco-previsto>R$ 0,00</strong>
+                                <small data-troco-hint>Informe o valor recebido</small>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="finalizar-venda-btn" type="button">Finalizar Venda</button>
+                </div>
+            </section>
+
+            <div class="caixa-sidebar">
+                <section class="caixa-section caixa-section--busca">
+                    <div class="section-head">
+                        <div>
+                            <p class="eyebrow">Busca rapida</p>
+                            <h2>Buscar produto</h2>
+                            <p class="section-subtitle">Use codigo ou nome para localizar e adicionar ao carrinho.</p>
+                        </div>
+                    </div>
+                    <div class="input-group input-group--search">
+                        <input type="text" id="busca-produto" placeholder="Digite o codigo ou nome do produto...">
+                    </div>
+                    <div class="list-header list-header--produtos">
+                        <span>Produto</span>
+                        <span>Valor</span>
+                        <span class="sr-only">Acoes</span>
+                    </div>
+                    <div id="lista-produtos" class="caixa-lista caixa-lista--produtos" aria-live="polite"></div>
+                </section>
+            </div>
+
         </div>
     </main>
     <script src="notifications.js"></script>
@@ -40,4 +147,5 @@
     <script src="caixa.js"></script>
 
 </body>
+
 </html>

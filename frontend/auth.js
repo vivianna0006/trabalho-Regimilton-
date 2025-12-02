@@ -1,46 +1,44 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. VERIFICAÃ‡ÃƒO DE LOGIN ---
+    // --- 1. VERIFICAÇÃO DE LOGIN ---
     const userCargo = sessionStorage.getItem('userCargo');
     if (!userCargo) {
         window.location.href = './index.html';
         return;
     }
 
-    // --- 2. DADOS DO MENU (COM AS OPÃ‡Ã•ES RESTAURADAS) ---
+    // --- 2. DADOS DO MENU ---
     const menuItems = [
         { text: 'Início', href: 'menu.html', parent: 'menu' },
         {
             text: 'Caixa',
             href: 'caixa.html',
-            parent: 'caixa', // O "pai" de todos os itens do dropdown Ã© 'caixa'
-            dropdown: [
+            parent: 'caixa',
+                                    dropdown: [
                 { text: 'Registro de Venda', href: 'caixa.html', adminOnly: false },
-                { text: 'Sangria', href: 'sangria.html', adminOnly: true },
-                // OPÃ‡Ã•ES RESTAURADAS ABAIXO
-                { text: 'Suprimento de Caixa', href: 'Suprimentos.html', adminOnly: false },
-                 { text: 'Histórico de Caixa', href: 'historico.html', adminOnly: true },
-                { text: 'Fechamento de Caixa', href: 'fechamentocaixa.html', adminOnly: true }
-            ]
+                { text: 'Sangria', href: 'sangria.html', adminOnly: false },
+                { text: 'Suprimento de Caixa', href: 'suprimentos.html', adminOnly: false },
+                { text: 'Historico de Caixa', href: 'historico.html', adminOnly: true },
+                { text: 'Fechamento de Caixa', href: 'fechamentocaixa.html', adminOnly: false }
+            ],
         },
         { text: 'Estoque', href: 'estoque.html', parent: 'estoque' },
+        // AQUI ESTÁ A CONFIGURAÇÃO QUE VOCÊ PEDIU:
+        // adminOnly: true -> Só aparece se userCargo for 'Administrador'
         { text: 'Cadastro de Funcionarios', href: 'cadastro-funcionarios.html', parent: 'cadastro-funcionarios', adminOnly: true }
     ];
-    try {
-        const caixa = (Array.isArray(menuItems) ? menuItems : []).find(i => i && i.text === 'Caixa' && Array.isArray(i.dropdown));
-        if (caixa) {
-            caixa.dropdown = caixa.dropdown.filter(d => d && d.href !== 'historico-vendas.html');
-        }
-    } catch (_) {}
 
-    // --- 3. LÃ“GICA DE CONSTRUÃ‡ÃƒO DO MENU ---
+    // --- 3. LÓGICA DE CONSTRUÇÃO DO MENU ---
     const navElement = document.querySelector('nav');
     if (!navElement) return;
 
-    const isAdministrador = userCargo.trim().toLowerCase() === 'administrador';
+    // Normaliza 'gerente' para 'Administrador' para garantir que a lógica funcione
+    const cargoNormalizado = (userCargo || '').trim().toLowerCase() === 'gerente' ? 'administrador' : (userCargo || '').trim().toLowerCase();
+    const isAdministrador = cargoNormalizado === 'administrador';
+
     const paginaAtual = window.location.pathname.split('/').pop();
     let currentPageParent = '';
 
-    // LÃ³gica para descobrir qual item "pai" deve ser destacado
+    // Descobre qual menu deve ficar destacado (active)
     menuItems.forEach(item => {
         if (item.href === paginaAtual) {
             currentPageParent = item.parent;
@@ -48,7 +46,7 @@
         if (item.dropdown) {
             item.dropdown.forEach(subItem => {
                 if (subItem.href === paginaAtual) {
-                    currentPageParent = item.parent; // Se estamos numa pÃ¡gina do dropdown, o pai Ã© destacado
+                    currentPageParent = item.parent;
                 }
             });
         }
@@ -56,15 +54,15 @@
 
     const fixLabel = (t) => {
         if (typeof t !== 'string') return t;
-        return t.replace('Início', 'Início').replace('Historico', 'Historico');
+        return t.replace('Início', 'Início').replace('Historico', 'Histórico');
     };
 
     let menuHTML = `<a href="./menu.html" class="brand-name">Styllo Fashion Modas</a><div class="nav-right"><ul class="navbar-links">`;
 
     menuItems.forEach(item => {
+        // SE FOR APENAS PARA ADMIN E USUÁRIO NÃO FOR ADMIN, PULA ESTE ITEM
         if (item.adminOnly && !isAdministrador) return;
 
-        // Adiciona a classe 'active' apenas ao <li> pai correto
         const liClass = (item.parent === currentPageParent) ? 'active' : '';
 
         if (item.dropdown) {
@@ -80,19 +78,16 @@
         }
     });
 
-  
-// --- 3.2: Adiciona o botão "Relatórios" dentro da lista de navegação ---
-menuHTML += `
-    <li><a href="relatorios.html" id="relatorios-link" class="menu-link">Relatórios</a></li> <!-- Botão Relatórios -->
+    // Adiciona Relatórios e Sair
+    menuHTML += `
+    <li><a href="relatorios.html" id="relatorios-link" class="menu-link">Relatórios</a></li>
     </ul>
     <button id="logout-btn-menu" type="button">Sair</button>
-</div>`;
-
-navElement.innerHTML = menuHTML;
+    </div>`;
 
     navElement.innerHTML = menuHTML;
 
-    // 3.1: Dropdown por clique para evitar sumiço ao mover o mouse
+    // Dropdown Logic (Clique para abrir, melhor que hover)
     try {
         if (!window.__sfDropdownInit) {
             window.__sfDropdownInit = true;
@@ -104,16 +99,14 @@ navElement.innerHTML = menuHTML;
                 const dd = e.target.closest('.dropdown');
                 if (ddBtn && dd) {
                     const alreadyOpen = dd.classList.contains('open');
-                    // Se já estiver aberto, o segundo clique navega
                     if (alreadyOpen) {
+                        // Se clicou no link pai e já estava aberto, navega
                         const href = ddBtn.getAttribute('href');
                         if (href && href !== '#') {
-                            e.preventDefault();
-                            try { window.location.href = href; } catch (_) {}
+                            window.location.href = href;
                             return;
                         }
                     }
-                    // Primeiro clique: apenas abre/fecha
                     e.preventDefault();
                     getDropdowns().forEach(d => { if (d !== dd) d.classList.remove('open'); });
                     dd.classList.toggle('open');
@@ -126,9 +119,8 @@ navElement.innerHTML = menuHTML;
                 if (e.key === 'Escape') closeAll();
             });
         }
-    } catch (_) {}
+    } catch (_) { }
 
-    // --- 4. FUNCIONALIDADE DO BOTÃƒO "SAIR" ---
     const logoutBtn = document.getElementById('logout-btn-menu');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
@@ -138,15 +130,6 @@ navElement.innerHTML = menuHTML;
             }
         });
     }
-    // --- 4.1: Funcionalidade do botão "Relatórios" ---
-const relatoriosBtn = document.getElementById('relatorios-btn-menu');
-if (relatoriosBtn) {
-    relatoriosBtn.addEventListener('click', () => {
-        // redireciona para a página de relatórios
-        window.location.href = 'relatorios.html';
-    });
-}
-
 });
-// Em frontend/auth.js
+
 

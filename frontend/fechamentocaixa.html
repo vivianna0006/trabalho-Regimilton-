@@ -1,92 +1,194 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fechamento de Caixa</title>
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="menu.css">
-    <link rel="stylesheet" href="componentes.css">
-    <link rel="stylesheet" href="notifications.css">
-    <link rel="stylesheet" href="fechamentocaixa.css"> 
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fechamento de Caixa | Styllo Fashion</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="componentes.css">
+    <link rel="stylesheet" href="notifications.css">
+    <link rel="stylesheet" href="fechamentocaixa.css">
 </head>
+
 <body>
-    <header> 
-        <nav></nav>
-    </header>
-
-    <main class="main-content">
-        <div class="container"> 
-            
+    <header>
+        <nav></nav>
+    </header>
+    <main class="main-content fechamento-content">
+        <div class="fc-container">
             <div class="header-fechamento">
-                <h1>Fechamento de Caixa Diário</h1>
-                
-                <a href="historico.html" id="btn-toggle-historico" class="btn-historico-link">Ver Histórico</a>
-                
+                <div>
+                    <p class="fc-kicker">Controle do dia</p>
+                    <h1>Fechamento de Caixa</h1>
+                    <p class="fc-subtitle">Suprimentos, vendas, sangrias e troco em um resumo claro.</p>
+                </div>
+                <a href="historico.html?tab=fechamentos" class="btn-historico-link">Ver Historico</a>
             </div>
-            
-            <div class="filters" style="margin-bottom: 20px;">
-                <label for="data-fechamento">Data do Fechamento:</label>
-                <input type="date" id="data-fechamento" onchange="iniciarFechamento()">
-                <button onclick="iniciarFechamento()" style="padding: 10px 15px;">Recarregar Dados</button>
-            </div>
 
-                        <section class="resumo-esperado componente-card">
-                <h2>Resumo Esperado (Teórico)</h2>
-                <div class="grid-resumo">
-                    <p>Suprimento de Troco/Inicial: <span id="val-suprimento">R$ 0,00</span></p>
-                    <p>Vendas em Dinheiro (Bruto): <span id="val-vendas-dinheiro">R$ 0,00</span></p>
-                    <p>Vendas em Cartão (Teórico): <span id="val-vendas-cartao">R$ 0,00</span></p>
-                    <p>Sangrias Realizadas: <span id="val-sangrias">R$ 0,00</span></p>
-                    <p>Devoluções/Cancelamentos (Dinheiro): <span id="val-devolucoes">R$ 0,00</span></p>
-                    <p class="total-caixa">CAIXA ESPERADO (DINHEIRO): <span id="val-esperado-caixa">R$ 0,00</span></p>
-                    <p class="total-geral">TOTAL GERAL ESPERADO: <span id="val-esperado-geral">R$ 0,00</span></p>
-                </div>
-            </section>
-            
-            <hr>
-
-                        <section class="conferencia-real componente-card">
-                <h2>Conferência Real</h2>
-                <div class="grid-conferencia">
+            <section class="componente-card fc-top-panel">
+                <header class="fc-lucro-header">
                     <div>
-                        <label for="dinheiro-contado">Dinheiro Contado:</label>
-                        <input type="number" step="0.01" id="dinheiro-contado" value="0.00" data-esperado-dinheiro="0.00">
+                        <p class="fc-kicker">Margem do dia</p>
+                        <h2>Pre-visualizacao</h2>
+                        <p class="fc-subtitle">Lucro teorico calculado com o resumo carregado.</p>
+                    </div>
+                    <div class="fc-lucro-meta">
+                        <span class="fc-lucro-badge">Automatico</span>
+                        <span class="fc-lucro-date" id="fc-data-top">--</span>
+                    </div>
+                </header>
+                <div class="fc-top-controls">
+                    <div class="filters__field">
+                        <label for="data-fechamento">Data do fechamento</label>
+                        <input type="date" id="data-fechamento">
+                    </div>
+                    <button class="btn-primary" id="btn-recarregar" type="button">Recarregar dados</button>
+                </div>
+                <p class="filters__hint">Baseado nas movimentacoes do dia selecionado.</p>
+                <div class="fc-lucro-preview">
+                    <div class="fc-lucro-row destaque">
+                        <div>
+                            <small>Lucro teorico</small>
+                            <strong id="val-lucro-destaque">R$ 0,00</strong>
+                        </div>
+                        <div class="fc-lucro-chip" id="fc-lucro-status">Aguardando resumo</div>
+                    </div>
+                    <div class="fc-lucro-row">
+                        <span>Vendas (dinheiro + cartao)</span>
+                        <strong id="val-lucro-vendas">R$ 0,00</strong>
+                    </div>
+                    <div class="fc-lucro-row">
+                        <span>Descontos (sangrias + devolucoes)</span>
+                        <strong id="val-lucro-descontos">R$ 0,00</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="cards-grid">
+                <article class="componente-card">
+                    <div class="card-header">
+                        <h2>Resumo esperado</h2>
+                        <span class="pill pill-soft" id="fc-status-carregamento">Carregando...</span>
+                    </div>
+                    <dl class="resumo-lista">
+                        <div>
+                            <dt>Suprimento inicial</dt>
+                            <dd id="val-suprimento">R$ 0,00</dd>
+                        </div>
+                        <div>
+                            <dt>Vendas dinheiro</dt>
+                            <dd id="val-vendas-dinheiro">R$ 0,00</dd>
+                        </div>
+                        <div>
+                            <dt>Vendas cartao</dt>
+                            <dd id="val-vendas-cartao">R$ 0,00</dd>
+                        </div>
+                        <div>
+                            <dt>Sangrias</dt>
+                            <dd id="val-sangrias">R$ 0,00</dd>
+                        </div>
+                        <div>
+                            <dt>Devoluções</dt>
+                            <dd id="val-devolucoes">R$ 0,00</dd>
+                        </div>
+                        <div class="linha-destaque">
+                            <dt>Troco entregue (sessao)</dt>
+                            <dd id="val-troco-sessao">R$ 0,00</dd>
+                        </div>
+                        <div class="linha-destaque">
+                            <dt>Caixa esperado (dinheiro)</dt>
+                            <dd id="val-esperado-caixa">R$ 0,00</dd>
+                        </div>
+                        <div class="linha-destaque">
+                            <dt>Total geral esperado</dt>
+                            <dd id="val-esperado-geral">R$ 0,00</dd>
+                        </div>
+                    </dl>
+                </article>
+
+                <article class="componente-card">
+                    <div class="card-header">
+                        <h2>Conferência real</h2>
+                        <span class="pill pill-soft">Valores informados</span>
+                    </div>
+                    <div class="grid-conferencia">
+                        <div class="fc-input-group">
+                            <label for="dinheiro-contado">Dinheiro contado</label>
+                            <div class="fc-input-wrapper">
+                                <span class="fc-prefix">R$</span>
+                                <input type="text" inputmode="decimal" step="0.01" id="dinheiro-contado"
+                                    class="money-input" placeholder="0,00" autocomplete="off"
+                                    data-esperado-dinheiro="0.00">
+                            </div>
+                            <span class="input-hint">Informe quanto há no caixa em dinheiro.</span>
+                        </div>
+                        <div class="fc-input-group">
+                            <label for="cartao-extrato">Cartão (extrato)</label>
+                            <div class="fc-input-wrapper">
+                                <span class="fc-prefix">R$</span>
+                                <input type="text" inputmode="decimal" step="0.01" id="cartao-extrato"
+                                    class="money-input" placeholder="0,00" autocomplete="off"
+                                    data-esperado-cartao="0.00">
+                            </div>
+                            <span class="input-hint">Informe o total em cartões.</span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="resultado-final componente-card">
+                <div class="card-header">
+                    <h2>Resultado final</h2>
+                    <span class="pill pill-soft" id="fc-data-resumo"></span>
+                </div>
+                <dl class="resumo-lista grid-resultado">
+                    <div>
+                        <dt>Diferença dinheiro</dt>
+                        <dd id="val-dif-dinheiro">R$ 0,00</dd>
                     </div>
                     <div>
-                        <label for="cartao-extrato">Cartão Extrato (Maq.):</label>
-                        <input type="number" step="0.01" id="cartao-extrato" value="0.00" data-esperado-cartao="0.00">
+                        <dt>Status dinheiro</dt>
+                        <dd id="status-dinheiro" class="pill-status neutro-tag">OK</dd>
                     </div>
-                </div>
-            </section>
-            
-            <hr>
+                    <div>
+                        <dt>Diferença cartão</dt>
+                        <dd id="val-dif-cartao">R$ 0,00</dd>
+                    </div>
+                    <div>
+                        <dt>Status cartão</dt>
+                        <dd id="status-cartao" class="pill-status neutro-tag">OK</dd>
+                    </div>
+                    <div class="linha-destaque">
+                        <dt>Diferença geral</dt>
+                        <dd id="val-dif-geral">R$ 0,00</dd>
+                    </div>
+                    <div class="linha-destaque">
+                        <dt>Status geral</dt>
+                        <dd id="status-geral" class="pill-status neutro-tag">Bateu</dd>
+                    </div>
+                    <div class="linha-destaque" data-lucro-final>
+                        <dt>Lucro teórico</dt>
+                        <dd id="val-lucro-final">R$ 0,00</dd>
+                    </div>
+                    <div class="linha-destaque">
+                        <dt>Caixa bateu?</dt>
+                        <dd id="status-geral-resumo" class="pill-status neutro-tag">Bateu</dd>
+                    </div>
+                </dl>
 
-                        <section class="resultado-final componente-card">
-                <h2>Resultado Final</h2>
-                <div class="grid-resumo grid-resultado">
-                    <p>Diferença Dinheiro (Contado vs Esperado): <span id="val-dif-dinheiro">R$ 0,00</span></p>
-                    <p>Status Dinheiro: <span id="status-dinheiro" class="neutro-tag">OK</span></p>
-                    
-                    <p>Diferença Cartão (Extrato vs Esperado): <span id="val-dif-cartao">R$ 0,00</span></p>
-                    <p>Status Cartão: <span id="status-cartao" class="neutro-tag">OK</span></p>
-                    
-                    <p class="total-diferenca">DIFERENÇA GERAL (TOTAL): <span id="val-dif-geral">R$ 0,00</span></p>
-                    <p class="total-status">STATUS GERAL: <span id="status-geral" class="neutro-tag">Bateu</span></p>
-                </div>
-                
-                <button onclick="finalizarCaixa()" id="finalizar-fechamento" disabled>Finalizar Fechamento</button>
-            </section>
-            
-            <hr>
+                <button id="finalizar-fechamento" type="button" disabled>Finalizar fechamento</button>
+                <p class="fc-footer-hint" id="fc-footer-hint">Informe os valores contados para habilitar o fechamento.
+                </p>
+            </section>
+        </div>
+    </main>
 
-                    </div>
-    </main>
-
-    <script src="api-client.js"></script>
-    <script src="notifications.js"></script>
-    <script src="auth.js"></script>
-    <script src="fechamentocaixa.js"></script> 
+    <script src="api-client.js"></script>
+    <script src="notifications.js"></script>
+    <script src="auth.js"></script>
+    <script src="fechamentocaixa.js"></script>
 </body>
+
 </html>

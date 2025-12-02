@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,7 @@
             <div class="menu-hero__text">
                 <span class="menu-hero__subtitle">Bem-vindo(a), <strong id="menu-username">Usuário</strong></span>
                 <h1 class="menu-hero__title">Escolha o que deseja gerenciar hoje</h1>
-                <p class="menu-hero__description">Acompanhe o movimento do caixa, cadastre novos produtos e mantenha tudo organizado em um unico lugar.</p>
+                <p class="menu-hero__description">Acompanhe o movimento do caixa, cadastre novos produtos e mantenha tudo organizado em um único lugar.</p>
                 <div class="menu-hero__actions">
                     <a class="menu-hero__btn menu-hero__btn--primary" href="./caixa.html">Ir para o Registro de Venda</a>
                     <a class="menu-hero__btn menu-hero__btn--secondary" href="./estoque.html">Ver Estoque</a>
@@ -40,7 +40,7 @@
             </div>
             <div class="menu-info__card">
                 <h4>Dica rápida</h4>
-                <p>Use o menu superior para navegar entre os modulos. As opções mudam conforme o cargo do usuário logado.</p>
+                <p>Use o menu superior para navegar entre os módulos. As opções mudam conforme o cargo do usuário logado.</p>
             </div>
         </section>
     </main>
@@ -53,6 +53,8 @@
             const roleEl = document.getElementById('menu-user-role');
             const username = sessionStorage.getItem('username');
             const cargo = sessionStorage.getItem('userCargo');
+            const cargoNormalizado = (cargo || '').toString().trim().toLowerCase();
+            const isGerente = cargoNormalizado === 'gerente' || cargoNormalizado === 'administrador';
 
             if (username && usernameEl) {
                 usernameEl.textContent = username;
@@ -70,7 +72,6 @@
                 const cardTitle = document.querySelector('.menu-hero__card h2');
                 if (cardTitle) cardTitle.textContent = 'Resumo rápido';
 
-                const lastAccessLabel = document.querySelector('.menu-hero__card .label');
                 const labels = document.querySelectorAll('.menu-hero__card .label');
                 if (labels && labels[1]) labels[1].textContent = 'Último acesso:';
 
@@ -82,6 +83,62 @@
                 const dicaP = Array.from(document.querySelectorAll('.menu-info__card p')).find(el => el.textContent.includes('menu superior'));
                 if (dicaP) dicaP.textContent = 'Use o menu superior para navegar entre os módulos. As opções mudam conforme o cargo do usuário logado.';
             } catch (_) {}
+
+            // Alertas de estoque baixo para gerente
+            if (isGerente) {
+                const avisosRecentes = new Map();
+                const ALERT_TTL = 5 * 60 * 1000; // 5 minutos
+
+                const calcularNivelEstoque = (produto) => {
+                    const valores = Object.values(produto?.tamanhos || {})
+                        .map((v) => Number(v || 0))
+                        .filter((v) => !Number.isNaN(v));
+                    const total = valores.reduce((acc, v) => acc + v, 0);
+                    const menor = valores.length ? Math.min(...valores) : 0;
+
+                    if (total === 0 || menor === 0 || total <= 5) return { nivel: 'baixo', total };
+                    if (total <= 15) return { nivel: 'medio-baixo', total };
+                    return { nivel: null, total };
+                };
+
+                const jaAvisado = (id) => {
+                    const agora = Date.now();
+                    const ultimo = avisosRecentes.get(id);
+                    if (ultimo && agora - ultimo < ALERT_TTL) return true;
+                    avisosRecentes.set(id, agora);
+                    return false;
+                };
+
+                const exibirAlertasEstoque = async () => {
+                    try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) { /* ignora ping */ }
+                    try {
+                        const resp = await ApiClient.fetch('/produtos', { cache: 'no-store' });
+                        if (!resp.ok) return;
+                        const produtos = await resp.json();
+                        const alertas = (Array.isArray(produtos) ? produtos : [])
+                            .map((p) => {
+                                const { nivel, total } = calcularNivelEstoque(p);
+                                return { produto: p, nivel, total };
+                            })
+                            .filter((p) => p.nivel)
+                            .sort((a, b) => a.total - b.total)
+                            .slice(0, 5);
+
+                        alertas.forEach(({ produto, nivel, total }) => {
+                            const id = produto?.id || produto?._id || produto?.codigo || produto?.nome;
+                            if (jaAvisado(id)) return;
+                            const titulo = nivel === 'baixo' ? 'Estoque BAIXO' : 'Estoque médio-baixo';
+                            const texto = `${titulo}: ${produto?.nome || 'Produto sem nome'} com ${total} unidades.`;
+                            showToast(texto, 'error');
+                        });
+                    } catch (e) {
+                        console.error('Erro ao verificar estoque baixo', e);
+                    }
+                };
+
+                exibirAlertasEstoque();
+                setInterval(exibirAlertasEstoque, 5 * 60 * 1000);
+            }
         });
     </script>
 </body>

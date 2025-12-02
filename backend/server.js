@@ -14,8 +14,9 @@ const USERS_DB_PATH = path.join(__dirname, 'database.json');
 const PRODUCTS_DB_FILE = path.join(__dirname, 'estoque.json');
 const SALES_DB_FILE = path.join(__dirname, 'sales.json');
 const TRANSACTIONS_DB_FILE = path.join(__dirname, 'cash_transactions.json');
-// const SUPRIMENTOS_DB_FILE = path.join(__dirname, 'suprimentos.json');
+const SUPRIMENTOS_DB_FILE = path.join(__dirname, 'suprimentos.json');
 const DEVOLUCOES_DB_FILE = path.join(__dirname, 'devolucoes.json');
+const FECHAMENTO_DB_FILE = path.join(__dirname, 'fechamentohistorico.json');
 
 app.use(cors());
 app.use(express.json());
@@ -31,14 +32,20 @@ const digitsOnly = (v) => normalizeText(v).replace(/[^0-9]/g, '');
 
 const MIN_USERNAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 6;
+const isStrongPassword = (pwd) => {
+  const str = typeof pwd === 'string' ? pwd.trim() : '';
+  if (str.length < MIN_PASSWORD_LENGTH || str.length > 64) return false;
+  // Aceita s? letras, s? n?meros ou combina??es; rejeita caracteres especiais
+  return /^[A-Za-z0-9]+$/.test(str);
+};
 
-// (helpers removidos por solicitação de reversão)
+// (helpers removidos por solicita��o de revers�o)
 
 const canonicalCargo = (value) => {
   const n = lowercaseText(value);
   if (!n) return '';
-  if (['administrador','gerente'].includes(n)) return 'Administrador';
-  if (['funcionario','funcionarios','colaborador','colaboradores'].includes(n)) return 'Funcionario';
+  if (['administrador', 'gerente'].includes(n)) return 'Administrador';
+  if (['funcionario', 'funcionarios', 'colaborador', 'colaboradores'].includes(n)) return 'Funcionario';
   return '';
 };
 
@@ -69,7 +76,235 @@ const isValidCPF = (value) => {
   return d1 === Number(s[9]) && d2 === Number(s[10]);
 };
 
-// STATUS (verifica se já existe admin)
+// Sessions + helpers reutiliz�veis
+const getSession = (req) => {
+  const bearer = (req.header('authorization') || '').replace(/^Bearer\s+/i, '');
+  const token = req.header('x-auth-token') || bearer;
+  return token ? activeSessions.get(token) : null;
+};
+
+const readClosings = () => {
+  try {
+    const raw = fs.readFileSync(FECHAMENTO_DB_FILE, 'utf8').trim();
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
+};
+const writeClosings = (list) => writeData(FECHAMENTO_DB_FILE, Array.isArray(list) ? list : []);
+const getLastClosingDate = () => {
+  const closings = readClosings();
+  if (!Array.isArray(closings) || !closings.length) return null;
+  const ordered = closings
+    .map((c) => new Date(c.criadoEm || c.data || c.date || 0))
+    .filter((d) => !Number.isNaN(d.getTime()))
+    .sort((a, b) => b - a);
+  return ordered[0] || null;
+};
+
+const toDayKey = (value) => {
+  if (!value && value !== 0) return null;
+  if (typeof value === 'string') {
+    const m = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (m) return m[1];
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const safeNumber = (v) => Number(v) || 0;
+const readSuprimentosFile = () => {
+  try { return readData(SUPRIMENTOS_DB_FILE) || []; } catch (_) { return []; }
+};
+const writeSuprimentosFile = (suprimentos) => {
+  writeData(SUPRIMENTOS_DB_FILE, Array.isArray(suprimentos) ? suprimentos : []);
+};
+const removerSuprimentoPorId = (id) => {
+  const idStr = String(id ?? '').trim();
+  if (!idStr) return false;
+  const suprimentos = readSuprimentosFile();
+  const filtrado = Array.isArray(suprimentos) ? suprimentos.filter((s) => String(s.id ?? '').trim() !== idStr) : [];
+  const alterou = filtrado.length !== suprimentos.length;
+  if (alterou) writeSuprimentosFile(filtrado);
+  return alterou;
+};
+
+const removeSuprimentoDaBase = (target) => {
+  if (!target) return;
+  const lista = readSuprimentosFile();
+  if (!Array.isArray(lista) || !lista.length) return;
+  const idx = lista.findIndex((s) => {
+    if (target.id != null && String(s.id) === String(target.id)) return true;
+    const amountMatch = Math.abs(safeNumber(s.amount ?? s.valor) - safeNumber(target.amount)) < 0.0001;
+    const dateMatch = toDayKey(s.date || s.data) && toDayKey(target.date || target.data) && toDayKey(s.date || s.data) === toDayKey(target.date || target.data);
+    const userMatch = lowercaseText(s.user) === lowercaseText(target.user);
+    return amountMatch && dateMatch && userMatch;
+  });
+  if (idx >= 0) {
+    lista.splice(idx, 1);
+    writeSuprimentosFile(lista);
+  }
+};
+const normalizeSuprimento = (raw = {}) => {
+  const amount = Math.abs(safeNumber(raw.amount ?? raw.valor ?? raw.total ?? raw.value));
+  if (!amount) return null;
+  const date = raw.date || raw.data || raw.createdAt || new Date().toISOString();
+  const user = normalizeText(raw.user || raw.usuario || raw.vendedor || raw.seller || '');
+  const description = normalizeText(raw.description || raw.descricao || raw.reason || raw.motivo || raw.obs || '');
+  const id = raw.id || raw._id || raw.timestamp || null;
+  return { id, amount, date, user, description };
+};
+const mergeSuprimentos = (transactionsOverride) => {
+  const transactions = Array.isArray(transactionsOverride) ? transactionsOverride : (readData(TRANSACTIONS_DB_FILE) || []);
+  const suprimentosArquivo = readSuprimentosFile();
+  const map = new Map();
+
+  const addEntry = (raw) => {
+    const normalized = normalizeSuprimento(raw);
+    if (!normalized) return;
+    const dateKey = normalized.date ? String(normalized.date) : (toDayKey(normalized.date) || '');
+    const key = normalized.id
+      ? `id:${normalized.id}`
+      : `k:${dateKey}|${normalized.amount.toFixed(2)}|${lowercaseText(normalized.user)}|${lowercaseText(normalized.description)}`;
+    if (!map.has(key)) map.set(key, normalized);
+  };
+
+  transactions.filter((t) => lowercaseText(t.type) === 'suprimento').forEach(addEntry);
+  suprimentosArquivo.forEach(addEntry);
+
+  return Array.from(map.values()).sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+};
+const registrarSuprimento = ({ amount, user, description, date }) => {
+  const valor = Math.abs(safeNumber(amount));
+  if (!valor) throw new Error('O valor do suprimento � inv�lido.');
+  const usuario = normalizeText(user || '');
+  if (!usuario) throw new Error('Usu�rio do suprimento n�o informado.');
+  const parsedDate = date ? new Date(date) : new Date();
+  const agora = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const entrada = {
+    id: Date.now(),
+    amount: valor,
+    user: usuario,
+    description: normalizeText(description || ''),
+    date: agora.toISOString()
+  };
+
+  const transactions = readData(TRANSACTIONS_DB_FILE) || [];
+  transactions.push({
+    id: entrada.id,
+    type: 'suprimento',
+    amount: entrada.amount,
+    user: entrada.user,
+    date: entrada.date,
+    description: entrada.description || null,
+    reason: entrada.description || null
+  });
+  writeData(TRANSACTIONS_DB_FILE, transactions);
+
+  const suprimentos = readSuprimentosFile();
+  suprimentos.push({
+    id: entrada.id,
+    descricao: entrada.description || null,
+    description: entrada.description || null,
+    valor: entrada.amount,
+    amount: entrada.amount,
+    user: entrada.user,
+    data: entrada.date,
+    date: entrada.date
+  });
+  writeSuprimentosFile(suprimentos);
+
+  return entrada;
+};
+const readSuprimentos = (transactionsOverride) => mergeSuprimentos(transactionsOverride);
+
+async function calcularResumoDia(targetDate) {
+  const dia = toDayKey(targetDate || new Date());
+  if (!dia) throw new Error('Data invalida para resumo.');
+
+  const sales = readData(SALES_DB_FILE) || [];
+  const transactions = readData(TRANSACTIONS_DB_FILE) || [];
+  const suprimentosUnificados = readSuprimentos(transactions);
+  const devolucoes = readDevolucoes() || [];
+  const fechamentos = readClosings();
+
+  const ultimoFechamento = fechamentos
+    .filter((f) => toDayKey(f.data) === dia)
+    .sort((a, b) => new Date(b.criadoEm || b.data || 0) - new Date(a.criadoEm || a.data || 0))[0];
+  const corte = ultimoFechamento ? new Date(ultimoFechamento.criadoEm || ultimoFechamento.data) : null;
+
+  let vendasDinheiro = 0;
+  let vendasCartao = 0;
+  let trocoCartaoPix = 0;
+  const saleMap = new Map();
+
+  sales
+    .filter((s) => toDayKey(s.date) === dia && (!corte || new Date(s.date) > corte))
+    .forEach((sale) => {
+      const total = (Array.isArray(sale.items) ? sale.items : []).reduce((acc, it) => acc + (Number(it.valor || 0) || 0), 0);
+      const metodo = lowercaseText(sale.paymentMethod || sale.formaPagamento || sale.metodoPagamento || sale.payment || sale.pagamento || sale.metodo || '');
+      const isPix = metodo.includes('pix');
+      const isCartao = ['cart', 'cred', 'deb'].some((needle) => metodo.includes(needle));
+      const isDigital = isCartao || isPix;
+      const recebido = safeNumber(sale.receivedAmount || sale.valorRecebido || sale.recebido || 0);
+      const valorCartao = isDigital ? (recebido > 0 ? recebido : total) : 0;
+      const trocoDigital = Math.max(0, safeNumber(sale.changeGiven || sale.troco || sale.trocoEntregue || 0));
+
+      if (isDigital) {
+        vendasCartao += valorCartao;
+        trocoCartaoPix += trocoDigital;
+      } else {
+        vendasDinheiro += total;
+      }
+
+      if (sale.id || sale.saleId) saleMap.set(String(sale.id || sale.saleId), { total, isCartao: isDigital });
+    });
+
+  const suprimentos = suprimentosUnificados
+    .filter((t) => toDayKey(t.date) === dia && (!corte || new Date(t.date) > corte))
+    .reduce((acc, t) => acc + Math.abs(safeNumber(t.amount)), 0);
+
+  const sangrias = transactions
+    .filter((t) => toDayKey(t.date) === dia && (!corte || new Date(t.date) > corte) && lowercaseText(t.type) === 'sangria')
+    .reduce((acc, t) => acc + Math.abs(safeNumber(t.amount)), 0);
+
+  let devolucoesDinheiro = 0;
+  let devolucoesCartao = 0;
+  devolucoes
+    .filter((d) => toDayKey(d.date) === dia && (!corte || new Date(d.date) > corte))
+    .forEach((d) => {
+      const valor = safeNumber(d.amount) || (Array.isArray(d.items) ? d.items.reduce((s, it) => s + safeNumber(it.amount || it.valor), 0) : 0);
+      if (!valor) return;
+      const sale = d.saleId ? saleMap.get(String(d.saleId)) : null;
+      const isCartao = sale ? sale.isCartao : false; // se desconhecido, assume dinheiro
+      if (isCartao) devolucoesCartao += valor; else devolucoesDinheiro += valor;
+    });
+  const devolucoesDia = devolucoesDinheiro + devolucoesCartao;
+
+  const vendasDinheiroLiquidas = vendasDinheiro - devolucoesDinheiro;
+  const vendasCartaoLiquido = vendasCartao - devolucoesCartao;
+  const esperadoCaixaDinheiro = suprimentos + vendasDinheiroLiquidas - sangrias - trocoCartaoPix;
+  const esperadoGeral = esperadoCaixaDinheiro + vendasCartaoLiquido;
+
+  return {
+    date: dia,
+    suprimentos,
+    vendasDinheiro,
+    vendasCartao: vendasCartaoLiquido,
+    sangrias,
+    trocoCartaoPix,
+    devolucoes: devolucoesDia,
+    devolucoesDinheiro,
+    devolucoesCartao,
+    esperadoCaixaDinheiro,
+    esperadoGeral,
+    corte: corte ? corte.toISOString() : null
+  };
+}
 app.get('/api/status', (req, res) => {
   try {
     const users = readData(USERS_DB_PATH);
@@ -80,7 +315,7 @@ app.get('/api/status', (req, res) => {
   }
 });
 
-// Helpers: devoluções file
+// Helpers: devolu��es file
 const readDevolucoes = () => {
   try { return JSON.parse(fs.readFileSync(DEVOLUCOES_DB_FILE, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
 };
@@ -93,7 +328,7 @@ app.get('/api/users/usernames', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
 
     const users = readData(USERS_DB_PATH) || [];
     const usernames = users
@@ -102,7 +337,7 @@ app.get('/api/users/usernames', (req, res) => {
       .sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
     res.status(200).json(usernames);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao listar usuários.' });
+    res.status(500).json({ message: 'Erro ao listar usu�rios.' });
   }
 });
 
@@ -110,7 +345,7 @@ app.get('/api/users/usernames', (req, res) => {
 app.get('/api/history/sales-all', (req, res) => {
   try {
     // Normalize file on read to keep it tidy
-    try { normalizeSalesFile(); } catch (_) {}
+    try { normalizeSalesFile(); } catch (_) { }
     const { vendedor, seller, dia, from, to, produtoId, produtoNome, search, sort } = req.query || {};
     const raw = fs.readFileSync(SALES_DB_FILE, 'utf8');
     let sales = [];
@@ -124,7 +359,7 @@ app.get('/api/history/sales-all', (req, res) => {
         try {
           const part = JSON.parse(m[0]);
           if (Array.isArray(part)) sales.push(...part);
-        } catch {}
+        } catch { }
       }
     }
 
@@ -179,15 +414,15 @@ app.get('/api/history/sales-all', (req, res) => {
 
     const key = String(sort || 'date_desc');
     const sorted = filtered.slice().sort((a, b) => {
-      if (key === 'date_asc') return (Date.parse(a.date)||0) - (Date.parse(b.date)||0);
-      if (key === 'total_desc') return (computeTotal(b)||0) - (computeTotal(a)||0);
-      if (key === 'total_asc') return (computeTotal(a)||0) - (computeTotal(b)||0);
-      return (Date.parse(b.date)||0) - (Date.parse(a.date)||0);
+      if (key === 'date_asc') return (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0);
+      if (key === 'total_desc') return (computeTotal(b) || 0) - (computeTotal(a) || 0);
+      if (key === 'total_asc') return (computeTotal(a) || 0) - (computeTotal(b) || 0);
+      return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
     });
 
     res.status(200).json(sorted);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao ler histórico de vendas.' });
+    res.status(500).json({ message: 'Erro ao ler hist�rico de vendas.' });
   }
 });
 
@@ -197,14 +432,14 @@ function normalizeSalesFile() {
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return; // already fine
-  } catch (_) {}
+  } catch (_) { }
   const regex = /\[[\s\S]*?\]/g;
   let m; const merged = [];
   while ((m = regex.exec(raw)) !== null) {
     try {
       const part = JSON.parse(m[0]);
       if (Array.isArray(part)) merged.push(...part);
-    } catch {}
+    } catch { }
   }
   writeData(SALES_DB_FILE, merged);
 }
@@ -214,7 +449,7 @@ app.post('/api/register', async (req, res) => {
   try {
     const body = req.body || {};
     let rawUsername = normalizeText(body.username);
-    const password = typeof body.password === 'string' ? body.password.trim() : '';
+    const passwordRaw = typeof body.password === 'string' ? body.password.trim() : '';
     const desiredCargo = canonicalCargo(body.cargo);
     const nomeCompleto = normalizeText(body.nomeCompleto || body.nome || body.fullName);
     const cpfDigits = digitsOnly(body.cpf);
@@ -222,47 +457,52 @@ app.post('/api/register', async (req, res) => {
     const telefoneDigits = digitsOnly(body.telefone || body.phone || body.telefoneCelular);
 
     if (!rawUsername || rawUsername.length < MIN_USERNAME_LENGTH)
-      return res.status(400).json({ message: `Informe um usuário com pelo menos ${MIN_USERNAME_LENGTH} caracteres.` });
-    if (!password || password.length < MIN_PASSWORD_LENGTH)
+      return res.status(400).json({ message: `Informe um usuario com pelo menos ${MIN_USERNAME_LENGTH} caracteres.` });
+    if (!passwordRaw || passwordRaw.length < MIN_PASSWORD_LENGTH)
       return res.status(400).json({ message: `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` });
+    if (!isStrongPassword(passwordRaw))
+      return res.status(400).json({ message: 'A senha deve usar apenas letras e/ou numeros (sem simbolos) e ter ate 64 caracteres.' });
 
     const users = readData(USERS_DB_PATH);
     const isFirstUser = users.length === 0;
-    const cargo = desiredCargo || (isFirstUser ? 'Administrador' : '');
+    const cargoBase = isFirstUser ? 'Administrador' : (desiredCargo || 'Funcionario');
+    const cargoNorm = canonicalCargo(cargoBase);
+    if (!cargoNorm) return res.status(400).json({ message: 'Cargo invalido. Use Administrador ou Funcionario.' });
+
+    if (!nomeCompleto || nomeCompleto.length < 3) return res.status(400).json({ message: 'Informe o nome completo do funcionario.' });
 
     if (!isFirstUser) {
-      if (!nomeCompleto) return res.status(400).json({ message: 'Informe o nome completo do funcionário.' });
-      if (!cpfDigits) return res.status(400).json({ message: 'Informe o CPF do funcionário.' });
-      if (!email) return res.status(400).json({ message: 'Informe o email do funcionário.' });
-      if (!telefoneDigits) return res.status(400).json({ message: 'Informe o telefone do funcionário.' });
-      if (!isValidEmail(email)) return res.status(400).json({ message: 'Email inválido.' });
-      if (!isValidPhone(telefoneDigits)) return res.status(400).json({ message: 'Telefone inválido.' });
+      if (!cpfDigits) return res.status(400).json({ message: 'Informe o CPF do funcionario.' });
+      if (!email) return res.status(400).json({ message: 'Informe o email do funcionario.' });
+      if (!telefoneDigits) return res.status(400).json({ message: 'Informe o telefone do funcionario.' });
+      if (!isValidEmail(email)) return res.status(400).json({ message: 'Email invalido.' });
+      if (!isValidPhone(telefoneDigits)) return res.status(400).json({ message: 'Telefone invalido.' });
     }
 
-    if (!isFirstUser && canonicalCargo(cargo) === 'Funcionario') {
-      rawUsername = cpfDigits;
-    }
+    if (!isFirstUser && cargoNorm === 'Funcionario') rawUsername = cpfDigits;
     if (!isFirstUser && !isValidCPF(cpfDigits)) {
-      return res.status(400).json({ message: 'CPF inválido.' });
+      return res.status(400).json({ message: 'CPF invalido.' });
     }
+    if (!rawUsername) return res.status(400).json({ message: 'Usuario invalido.' });
+
     const existingUsername = users.find(u => typeof u.username === 'string' && u.username.toLowerCase() === rawUsername.toLowerCase());
-    if (existingUsername) return res.status(409).json({ message: 'Este nome de usuário já está em uso.' });
-    if (cpfDigits && users.some(u => u.cpf && digitsOnly(u.cpf) === cpfDigits)) return res.status(409).json({ message: 'Já existe um funcionário com este CPF.' });
-    if (email && users.some(u => typeof u.email === 'string' && u.email.toLowerCase() === email)) return res.status(409).json({ message: 'Já existe um funcionário com este email.' });
+    if (existingUsername) return res.status(409).json({ message: 'Este nome de usuario ja esta em uso.' });
+    if (cpfDigits && users.some(u => u.cpf && digitsOnly(u.cpf) === cpfDigits)) return res.status(409).json({ message: 'Ja existe um funcionario com este CPF.' });
+    if (email && users.some(u => typeof u.email === 'string' && u.email.toLowerCase() === email)) return res.status(409).json({ message: 'Ja existe um funcionario com este email.' });
 
     if (!isFirstUser) {
       const authToken = req.header('x-auth-token');
       const session = authToken ? activeSessions.get(authToken) : null;
       const isAdminSession = session && canonicalCargo(session.cargo) === 'Administrador';
-      if (!isAdminSession) return res.status(403).json({ message: 'Apenas administradores autenticados podem cadastrar usuários.' });
+      if (!isAdminSession) return res.status(403).json({ message: 'Apenas administradores autenticados podem cadastrar usuarios.' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(passwordRaw, 10);
     const nowIso = new Date().toISOString();
     const newUser = {
       username: rawUsername,
       password: hashedPassword,
-      cargo: cargo || 'Funcionario',
+      cargo: cargoNorm,
       nomeCompleto: nomeCompleto || rawUsername,
       cpf: cpfDigits || null,
       email: email || null,
@@ -272,19 +512,20 @@ app.post('/api/register', async (req, res) => {
     };
     users.push(newUser);
     writeData(USERS_DB_PATH, users);
-    return res.status(201).json({ message: 'Funcionário cadastrado com sucesso!', user: {
-      username: newUser.username,
-      cargo: newUser.cargo,
-      nomeCompleto: newUser.nomeCompleto,
-      cpf: newUser.cpf,
-      email: newUser.email,
-      telefone: newUser.telefone
-    }});
+    return res.status(201).json({
+      message: 'Funcionario cadastrado com sucesso!', user: {
+        username: newUser.username,
+        cargo: newUser.cargo,
+        nomeCompleto: newUser.nomeCompleto,
+        cpf: newUser.cpf,
+        email: newUser.email,
+        telefone: newUser.telefone
+      }
+    });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno no servidor.' });
   }
 });
-
 // LOGIN
 app.post('/api/login', async (req, res) => {
   try {
@@ -298,15 +539,15 @@ app.post('/api/login', async (req, res) => {
     if (!user && inputDigits.length === 11) {
       user = users.find(u => u && u.cpf && digitsOnly(u.cpf) === inputDigits);
     }
-    if (!user) return res.status(401).json({ success: false, message: 'Usuário ou senha inválidos.' });
+    if (!user) return res.status(401).json({ success: false, message: 'Usu�rio ou senha inv�lidos.' });
 
     if (canonicalCargo(user.cargo) === 'Funcionario') {
       if (inputDigits.length !== 11 || digitsOnly(user.cpf || '') !== inputDigits)
-        return res.status(401).json({ success: false, message: 'Para funcionário, utilize o CPF como usuário.' });
+        return res.status(401).json({ success: false, message: 'Para funcion�rio, utilize o CPF como usu�rio.' });
     }
 
     if (!inputPassword || !(await bcrypt.compare(inputPassword, user.password)))
-      return res.status(401).json({ success: false, message: 'Usuário ou senha inválidos.' });
+      return res.status(401).json({ success: false, message: 'Usu�rio ou senha inv�lidos.' });
 
     for (const [tokenValue, sess] of activeSessions.entries()) {
       if (sess.username === user.username) activeSessions.delete(tokenValue);
@@ -320,76 +561,49 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.get('/api/users', async (req, res) => {
-    try {
-        const db = await readDB();
-        const usernames = db.users.map(user => user.username);
-        res.json(usernames);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar utilizadores." });
-    }
-});
-
-// Rota para buscar o histórico de vendas com filtros
+// Rota para buscar o hist�rico de vendas com filtros
 app.get('/api/history/sales', async (req, res) => {
-    try {
-        let sales = await readSales();
-        const { vendedor, dia, produtoId, produtoNome } = req.query;
+  try {
+    let sales = await readSales();
+    const { vendedor, dia, produtoId, produtoNome } = req.query;
 
-        if (vendedor) {
-            sales = sales.filter(sale => sale.seller === vendedor);
-        }
-        if (dia) { // Formato esperado: YYYY-MM-DD
-            sales = sales.filter(sale => sale.date.startsWith(dia));
-        }
-        if (produtoId) {
-            sales = sales.filter(sale => sale.items.some(item => item.id.toLowerCase().includes(produtoId.toLowerCase())));
-        }
-        if (produtoNome) {
-            sales = sales.filter(sale => sale.items.some(item => item.nome.toLowerCase().includes(produtoNome.toLowerCase())));
-        }
-        res.json(sales.reverse()); // Retorna as mais recentes primeiro
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar histórico de vendas." });
+    if (vendedor) {
+      sales = sales.filter(sale => sale.seller === vendedor);
     }
+    if (dia) { // Formato esperado: YYYY-MM-DD
+      sales = sales.filter(sale => sale.date.startsWith(dia));
+    }
+    if (produtoId) {
+      sales = sales.filter(sale => sale.items.some(item => item.id.toLowerCase().includes(produtoId.toLowerCase())));
+    }
+    if (produtoNome) {
+      sales = sales.filter(sale => sale.items.some(item => item.nome.toLowerCase().includes(produtoNome.toLowerCase())));
+    }
+    res.json(sales.reverse()); // Retorna as mais recentes primeiro
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar hist�rico de vendas." });
+  }
 });
 
-// Rota para buscar o histórico de sangrias com filtros
+// Rota para buscar o hist�rico de sangrias com filtros
 app.get('/api/history/sangrias', async (req, res) => {
-    try {
-        let transactions = await readTransactions();
-        const { vendedor, dia } = req.query;
+  try {
+    let transactions = await readTransactions();
+    const { vendedor, dia } = req.query;
 
-        if (vendedor) {
-            transactions = transactions.filter(t => t.user === vendedor);
-        }
-        if (dia) {
-            transactions = transactions.filter(t => t.date.startsWith(dia));
-        }
-        res.json(transactions.reverse());
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar histórico de sangrias." });
+    if (vendedor) {
+      transactions = transactions.filter(t => t.user === vendedor);
     }
+    if (dia) {
+      transactions = transactions.filter(t => t.date.startsWith(dia));
+    }
+    res.json(transactions.reverse());
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar hist�rico de sangrias." });
+  }
 });
 
-// Rota para buscar o histórico de suprimentos com filtros
-app.post('/api/suprimento', async (req, res) => {
-    try {
-        const suprimentos = await readSuprimentos();
-        const newSuprimento = {
-            id: new Date().getTime(),
-            ...req.body,
-            date: new Date().toISOString()
-        };
-        suprimentos.push(newSuprimento);
-        await writeSuprimentos(suprimentos);
-        res.status(201).json({ success: true, message: 'Suprimento registado com sucesso!' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Erro ao registar o suprimento.' });
-    }
-});
-
-// Rota para buscar o histórico de devoluções com filtros
+// Rota para buscar o hist�rico de devolu��es com filtros
 app.get('/api/history/devolucoes', (req, res) => {
   try {
     const raw = readDevolucoes() || [];
@@ -404,7 +618,7 @@ app.get('/api/history/devolucoes', (req, res) => {
         amount: Number(r.amount || 0) || 0,
         items: []
       };
-      // Suporte a formatos: items[], produto único, products
+      // Suporte a formatos: items[], produto �nico, products
       if (Array.isArray(r.items)) {
         base.items = r.items.map(it => ({
           productId: it.productId ?? it.id ?? it.codigo ?? null,
@@ -412,7 +626,7 @@ app.get('/api/history/devolucoes', (req, res) => {
           quantity: Number(it.quantity || 1) || 1,
           amount: Number(it.amount || 0) || 0
         }));
-        if (!base.amount) base.amount = base.items.reduce((s,it)=> s + (Number(it.amount||0)||0), 0);
+        if (!base.amount) base.amount = base.items.reduce((s, it) => s + (Number(it.amount || 0) || 0), 0);
       } else if (r.produto) {
         const p = r.produto;
         base.items = [{ productId: p.id || null, productName: p.nome || p.name || null, quantity: 1, amount: Number(p.valor || 0) || 0 }];
@@ -458,16 +672,16 @@ app.get('/api/history/devolucoes', (req, res) => {
         }
         return true;
       } catch { return false; }
-    }).sort((a,b)=> {
-      if (sort === 'amount_desc') return (Number(b.amount)||0) - (Number(a.amount)||0);
-      if (sort === 'amount_asc') return (Number(a.amount)||0) - (Number(b.amount)||0);
-      if (sort === 'date_asc') return (Date.parse(a.date)||0) - (Date.parse(b.date)||0);
-      return (Date.parse(b.date)||0) - (Date.parse(a.date)||0);
+    }).sort((a, b) => {
+      if (sort === 'amount_desc') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+      if (sort === 'amount_asc') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+      if (sort === 'date_asc') return (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0);
+      return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
     });
 
     res.status(200).json(filtered);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao buscar histórico de devoluções.' });
+    res.status(500).json({ message: 'Erro ao buscar hist�rico de devolu��es.' });
   }
 });
 
@@ -476,59 +690,59 @@ app.get('/api/history/devolucoes', (req, res) => {
 
 // Rota para apagar uma venda inteira
 app.delete('/api/history/sales/:id', async (req, res) => {
-    try {
-        const saleId = parseInt(req.params.id, 10);
-        let sales = await readSales();
-        const initialLength = sales.length;
-        sales = sales.filter(sale => sale.id !== saleId);
+  try {
+    const saleId = parseInt(req.params.id, 10);
+    let sales = await readSales();
+    const initialLength = sales.length;
+    sales = sales.filter(sale => sale.id !== saleId);
 
-        if (sales.length === initialLength) {
-            return res.status(404).json({ message: "Venda não encontrada." });
-        }
-
-        await writeSales(sales);
-        res.json({ success: true, message: 'Venda apagada com sucesso!' });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao apagar a venda.' });
+    if (sales.length === initialLength) {
+      return res.status(404).json({ message: "Venda n�o encontrada." });
     }
+
+    await writeSales(sales);
+    res.json({ success: true, message: 'Venda apagada com sucesso!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao apagar a venda.' });
+  }
 });
 
-// Rota para processar uma devolução
+// Rota para processar uma devolu��o
 app.post('/api/devolucao', async (req, res) => {
-    try {
-        const { saleId, produto, motivo, vendedor } = req.body;
-        
-        // 1. Registar a devolução
-        const devolucoes = await readDevolucoes();
-        const novaDevolucao = {
-            id: new Date().getTime(),
-            saleId,
-            produto,
-            motivo,
-            vendedor,
-            date: new Date().toISOString()
-        };
-        devolucoes.push(novaDevolucao);
-        await writeDevolucoes(devolucoes);
+  try {
+    const { saleId, produto, motivo, vendedor } = req.body;
 
-        // 2. Marcar o item como devolvido na venda original
-        const sales = await readSales();
-        const saleIndex = sales.findIndex(s => s.id === saleId);
-        if (saleIndex > -1) {
-            const itemIndex = sales[saleIndex].items.findIndex(item => item.id === produto.id && !item.devolvido);
-             if (itemIndex > -1) {
-                sales[saleIndex].items[itemIndex].devolvido = true;
-                await writeSales(sales);
-            }
-        }
-        
-        // 3. Atualizar o estoque (opcional, mas recomendado)
-        // Esta parte pode ser adicionada depois para aumentar a quantidade em estoque
+    // 1. Registar a devolu��o
+    const devolucoes = await readDevolucoes();
+    const novaDevolucao = {
+      id: new Date().getTime(),
+      saleId,
+      produto,
+      motivo,
+      vendedor,
+      date: new Date().toISOString()
+    };
+    devolucoes.push(novaDevolucao);
+    await writeDevolucoes(devolucoes);
 
-        res.status(201).json({ success: true, message: 'Devolução registada com sucesso!' });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao processar devolução.' });
+    // 2. Marcar o item como devolvido na venda original
+    const sales = await readSales();
+    const saleIndex = sales.findIndex(s => s.id === saleId);
+    if (saleIndex > -1) {
+      const itemIndex = sales[saleIndex].items.findIndex(item => item.id === produto.id && !item.devolvido);
+      if (itemIndex > -1) {
+        sales[saleIndex].items[itemIndex].devolvido = true;
+        await writeSales(sales);
+      }
     }
+
+    // 3. Atualizar o estoque (opcional, mas recomendado)
+    // Esta parte pode ser adicionada depois para aumentar a quantidade em estoque
+
+    res.status(201).json({ success: true, message: 'Devolu��o registada com sucesso!' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao processar devolu��o.' });
+  }
 });
 
 // USERS list (admin-only)
@@ -536,7 +750,7 @@ app.get('/api/users', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar funcionarios.' });
 
     const { search = '', cargo } = req.query || {};
@@ -565,96 +779,96 @@ app.get('/api/users', (req, res) => {
       const bTime = b.createdAt ? Date.parse(b.createdAt) || 0 : 0;
       if (aTime === bTime) return (lowercaseText(a.nomeCompleto)).localeCompare(lowercaseText(b.nomeCompleto));
       return bTime - aTime;
-  });
+    });
 
-  // USERS: Update (admin-only)
-  app.put('/api/users/:username', async (req, res) => {
-    try {
-      const authToken = req.header('x-auth-token');
-      const session = authToken ? activeSessions.get(authToken) : null;
-      if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-      if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcionários.' });
+    // USERS: Update (admin-only)
+    app.put('/api/users/:username', async (req, res) => {
+      try {
+        const authToken = req.header('x-auth-token');
+        const session = authToken ? activeSessions.get(authToken) : null;
+        if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcion�rios.' });
 
-      const targetUsername = String(req.params.username || '').trim();
-      if (!targetUsername) return res.status(400).json({ message: 'Usuário alvo inválido.' });
+        const targetUsername = String(req.params.username || '').trim();
+        if (!targetUsername) return res.status(400).json({ message: 'Usu�rio alvo inv�lido.' });
 
-      const users = readData(USERS_DB_PATH);
-      const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-      if (idx === -1) return res.status(404).json({ message: 'Funcionário não encontrado.' });
+        const users = readData(USERS_DB_PATH);
+        const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
+        if (idx === -1) return res.status(404).json({ message: 'Funcion�rio n�o encontrado.' });
 
-      const body = req.body || {};
-      const updates = {};
-      if (typeof body.nomeCompleto === 'string') updates.nomeCompleto = normalizeText(body.nomeCompleto);
-      if (typeof body.email === 'string') updates.email = lowercaseText(body.email);
-      if (typeof body.telefone === 'string') updates.telefone = digitsOnly(body.telefone);
-      if (typeof body.cpf === 'string') updates.cpf = digitsOnly(body.cpf);
-      if (typeof body.cargo === 'string') updates.cargo = canonicalCargo(body.cargo) || users[idx].cargo;
+        const body = req.body || {};
+        const updates = {};
+        if (typeof body.nomeCompleto === 'string') updates.nomeCompleto = normalizeText(body.nomeCompleto);
+        if (typeof body.email === 'string') updates.email = lowercaseText(body.email);
+        if (typeof body.telefone === 'string') updates.telefone = digitsOnly(body.telefone);
+        if (typeof body.cpf === 'string') updates.cpf = digitsOnly(body.cpf);
+        if (typeof body.cargo === 'string') updates.cargo = canonicalCargo(body.cargo) || users[idx].cargo;
 
-      if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inválido.' });
-      if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inválido.' });
-      if (updates.cpf && updates.cpf.length && updates.cpf !== (digitsOnly(users[idx].cpf || ''))) {
-        if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inválido.' });
-        if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'Já existe um funcionário com este CPF.' });
-      }
-      if (updates.email && updates.email !== lowercaseText(users[idx].email || '')) {
-        if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'Já existe um funcionário com este email.' });
-      }
-
-      if (typeof body.password === 'string' && body.password.trim()) {
-        const pw = body.password.trim();
-        if (pw.length < 6) return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
-        updates.password = await bcrypt.hash(pw, 10);
-      }
-
-      const now = new Date().toISOString();
-      users[idx] = { ...users[idx], ...updates, updatedAt: now };
-      writeData(USERS_DB_PATH, users);
-
-      const u = users[idx];
-      return res.status(200).json({
-        message: 'Funcionário atualizado com sucesso!',
-        user: { username: u.username, cargo: u.cargo, nomeCompleto: u.nomeCompleto, cpf: u.cpf, email: u.email, telefone: u.telefone, updatedAt: u.updatedAt }
-      });
-    } catch (e) {
-      res.status(500).json({ message: 'Erro ao atualizar funcionário.' });
-    }
-  });
-
-  // USERS: Delete (admin-only)
-  app.delete('/api/users/:username', (req, res) => {
-    try {
-      const authToken = req.header('x-auth-token');
-      const session = authToken ? activeSessions.get(authToken) : null;
-      if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-      if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcionários.' });
-
-      const targetUsername = String(req.params.username || '').trim();
-      if (!targetUsername) return res.status(400).json({ message: 'Usuário alvo inválido.' });
-
-      const users = readData(USERS_DB_PATH);
-      const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-      if (idx === -1) return res.status(404).json({ message: 'Funcionário não encontrado.' });
-
-      // Evitar excluir o último administrador
-      const isAdmin = canonicalCargo(users[idx].cargo) === 'Administrador';
-      if (isAdmin) {
-        const adminCount = users.filter(u => canonicalCargo(u.cargo) === 'Administrador').length;
-        if (adminCount <= 1) return res.status(400).json({ message: 'Não é possível excluir o último administrador.' });
-      }
-
-      const removed = users.splice(idx, 1)[0];
-      writeData(USERS_DB_PATH, users);
-      // Encerrar sessões do usuário removido
-      for (const [tokenValue, sess] of activeSessions.entries()) {
-        if (sess.username && String(sess.username).toLowerCase() === String(removed.username).toLowerCase()) {
-          activeSessions.delete(tokenValue);
+        if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inv�lido.' });
+        if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inv�lido.' });
+        if (updates.cpf && updates.cpf.length && updates.cpf !== (digitsOnly(users[idx].cpf || ''))) {
+          if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inv�lido.' });
+          if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'J� existe um funcion�rio com este CPF.' });
         }
+        if (updates.email && updates.email !== lowercaseText(users[idx].email || '')) {
+          if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'J� existe um funcion�rio com este email.' });
+        }
+
+        if (typeof body.password === 'string' && body.password.trim()) {
+          const pw = body.password.trim();
+          if (pw.length < 6) return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
+          updates.password = await bcrypt.hash(pw, 10);
+        }
+
+        const now = new Date().toISOString();
+        users[idx] = { ...users[idx], ...updates, updatedAt: now };
+        writeData(USERS_DB_PATH, users);
+
+        const u = users[idx];
+        return res.status(200).json({
+          message: 'Funcion�rio atualizado com sucesso!',
+          user: { username: u.username, cargo: u.cargo, nomeCompleto: u.nomeCompleto, cpf: u.cpf, email: u.email, telefone: u.telefone, updatedAt: u.updatedAt }
+        });
+      } catch (e) {
+        res.status(500).json({ message: 'Erro ao atualizar funcion�rio.' });
       }
-      return res.status(200).json({ success: true, message: 'Funcionário excluído com sucesso.' });
-    } catch (e) {
-      res.status(500).json({ message: 'Erro ao excluir funcionário.' });
-    }
-  });
+    });
+
+    // USERS: Delete (admin-only)
+    app.delete('/api/users/:username', (req, res) => {
+      try {
+        const authToken = req.header('x-auth-token');
+        const session = authToken ? activeSessions.get(authToken) : null;
+        if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcion�rios.' });
+
+        const targetUsername = String(req.params.username || '').trim();
+        if (!targetUsername) return res.status(400).json({ message: 'Usu�rio alvo inv�lido.' });
+
+        const users = readData(USERS_DB_PATH);
+        const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
+        if (idx === -1) return res.status(404).json({ message: 'Funcion�rio n�o encontrado.' });
+
+        // Evitar excluir o �ltimo administrador
+        const isAdmin = canonicalCargo(users[idx].cargo) === 'Administrador';
+        if (isAdmin) {
+          const adminCount = users.filter(u => canonicalCargo(u.cargo) === 'Administrador').length;
+          if (adminCount <= 1) return res.status(400).json({ message: 'N�o � poss�vel excluir o �ltimo administrador.' });
+        }
+
+        const removed = users.splice(idx, 1)[0];
+        writeData(USERS_DB_PATH, users);
+        // Encerrar sess�es do usu�rio removido
+        for (const [tokenValue, sess] of activeSessions.entries()) {
+          if (sess.username && String(sess.username).toLowerCase() === String(removed.username).toLowerCase()) {
+            activeSessions.delete(tokenValue);
+          }
+        }
+        return res.status(200).json({ success: true, message: 'Funcion�rio exclu�do com sucesso.' });
+      } catch (e) {
+        res.status(500).json({ message: 'Erro ao excluir funcion�rio.' });
+      }
+    });
     res.status(200).json({ total: entries.length, results: filtered });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno no servidor.' });
@@ -690,7 +904,7 @@ app.get('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const prod = produtos.find(p => p.id === id);
-    if (!prod) return res.status(404).json({ message: 'Produto não encontrado.' });
+    if (!prod) return res.status(404).json({ message: 'Produto n�o encontrado.' });
     res.status(200).json(prod);
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao buscar produto.' });
@@ -701,8 +915,8 @@ app.post('/api/produtos', (req, res) => {
   try {
     const novo = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
-    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inválido.' });
-    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'Já existe um produto com este ID.' });
+    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inv�lido.' });
+    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'J� existe um produto com este ID.' });
     produtos.push(novo);
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(201).json({ message: 'Produto adicionado com sucesso.' });
@@ -717,7 +931,7 @@ app.put('/api/produtos/:id', (req, res) => {
     const body = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto não encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto n�o encontrado.' });
     produtos[idx] = { ...produtos[idx], ...body, id };
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(200).json({ message: 'Produto atualizado com sucesso.' });
@@ -731,10 +945,10 @@ app.delete('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto não encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto n�o encontrado.' });
     produtos.splice(idx, 1);
     writeData(PRODUCTS_DB_FILE, produtos);
-    res.status(200).json({ message: 'Produto excluído com sucesso.' });
+    res.status(200).json({ message: 'Produto exclu�do com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir produto.' });
   }
@@ -746,8 +960,28 @@ app.post('/api/sales', (req, res) => {
     const { items, seller } = req.body || {};
     if (!Array.isArray(items) || items.length === 0 || !seller)
       return res.status(400).json({ message: 'Dados da venda incompletos.' });
+    const metodoPagamento = normalizeText(
+      req.body.paymentMethod
+      || req.body.formaPagamento
+      || req.body.metodoPagamento
+      || req.body.payment
+      || req.body.pagamento
+      || req.body.metodo
+      || ''
+    ) || 'dinheiro';
+    const recebido = safeNumber(req.body.receivedAmount ?? req.body.valorRecebido ?? req.body.recebido);
+    const trocoEntregue = Math.max(0, safeNumber(req.body.changeGiven ?? req.body.troco ?? req.body.trocoEntregue ?? 0));
+
     const sales = readData(SALES_DB_FILE);
-    sales.push({ id: Date.now(), date: new Date().toISOString(), items, seller });
+    sales.push({
+      id: Date.now(),
+      date: new Date().toISOString(),
+      items,
+      seller,
+      paymentMethod: metodoPagamento,
+      receivedAmount: recebido || 0,
+      changeGiven: trocoEntregue
+    });
     writeData(SALES_DB_FILE, sales);
     res.status(201).json({ message: 'Venda registrada com sucesso!' });
   } catch (e) {
@@ -757,11 +991,11 @@ app.post('/api/sales', (req, res) => {
 
 app.get('/api/sales', (req, res) => {
   try {
-    try { normalizeSalesFile(); } catch (_) {}
+    try { normalizeSalesFile(); } catch (_) { }
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o histórico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de vendas.' });
 
     const sales = readData(SALES_DB_FILE) || [];
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
@@ -810,10 +1044,10 @@ app.get('/api/sales', (req, res) => {
       return { id: sale.id, date: sale.date, seller: sale.seller || '', totalItems, totalValue, items };
     }).sort((a, b) => {
       const key = String(sortKey || 'date_desc');
-      if (key === 'date_asc') return (Date.parse(a.date)||0) - (Date.parse(b.date)||0);
-      if (key === 'total_desc') return (Number(b.totalValue)||0) - (Number(a.totalValue)||0);
-      if (key === 'total_asc') return (Number(a.totalValue)||0) - (Number(b.totalValue)||0);
-      return (Date.parse(b.date)||0) - (Date.parse(a.date)||0);
+      if (key === 'date_asc') return (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0);
+      if (key === 'total_desc') return (Number(b.totalValue) || 0) - (Number(a.totalValue) || 0);
+      if (key === 'total_asc') return (Number(a.totalValue) || 0) - (Number(b.totalValue) || 0);
+      return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
     });
 
     const pageNum = Math.max(1, parseInt(pageStr || '1', 10) || 1);
@@ -836,8 +1070,8 @@ app.get('/api/sales/summary', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o histórico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de vendas.' });
 
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
     const { from, to, seller = '', search = '', productId: productIdStr } = req.query || {};
@@ -908,16 +1142,16 @@ app.delete('/api/sales/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda não encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda n�o encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda excluída com sucesso.' });
+    return res.status(200).json({ message: 'Venda exclu�da com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -928,16 +1162,16 @@ app.post('/api/sales/:id/delete', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda não encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda n�o encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda excluída com sucesso.' });
+    return res.status(200).json({ message: 'Venda exclu�da com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -948,14 +1182,14 @@ app.patch('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda não encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda n�o encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -989,14 +1223,14 @@ app.post('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda não encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda n�o encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -1025,16 +1259,16 @@ app.post('/api/sales/:id/items/remove', (req, res) => {
   }
 });
 
-// CASH: Refund (Devolução) - admin-only
+// CASH: Refund (Devolu��o) - admin-only
 app.post('/api/refunds', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devoluções.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devolu��es.' });
 
     const { saleId, amount, user, reason, items } = req.body || {};
-    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolução inválido.' });
+    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolu��o inv�lido.' });
 
     const devolucoes = readDevolucoes() || [];
     const entry = {
@@ -1076,11 +1310,11 @@ app.post('/api/refunds', (req, res) => {
         }
         writeData(SALES_DB_FILE, sales);
       }
-    } catch (_) {}
+    } catch (_) { }
 
-    res.status(201).json({ message: 'Devolução registrada com sucesso!', refund: entry });
+    res.status(201).json({ message: 'Devolu��o registrada com sucesso!', refund: entry });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao registrar devolução.' });
+    res.status(500).json({ message: 'Erro interno ao registrar devolu��o.' });
   }
 });
 
@@ -1089,18 +1323,18 @@ app.delete('/api/refunds/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devoluções.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devolu��es.' });
 
     const { id } = req.params;
     const devolucoes = readDevolucoes() || [];
     const idx = devolucoes.findIndex(r => String(r.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Devolução não encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Devolu��o n�o encontrada.' });
     devolucoes.splice(idx, 1);
     writeDevolucoes(devolucoes);
-    return res.status(200).json({ message: 'Devolução excluída com sucesso.' });
+    return res.status(200).json({ message: 'Devolu��o exclu�da com sucesso.' });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao excluir devolução.' });
+    res.status(500).json({ message: 'Erro interno ao excluir devolu��o.' });
   }
 });
 
@@ -1108,7 +1342,7 @@ app.delete('/api/refunds/:id', (req, res) => {
 app.post('/api/sangria', (req, res) => {
   try {
     const { amount, user, reason } = req.body || {};
-    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria é inválido.' });
+    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria � inv�lido.' });
     const transactions = readData(TRANSACTIONS_DB_FILE);
     transactions.push({ id: Date.now(), type: 'sangria', amount, user, date: new Date().toISOString(), reason: reason || null });
     writeData(TRANSACTIONS_DB_FILE, transactions);
@@ -1118,27 +1352,34 @@ app.post('/api/sangria', (req, res) => {
   }
 });
 
-// CASH: Suprimento
-app.post('/api/suprimento', (req, res) => {
+// CASH: Suprimento (alias singular/plural)
+const suprimentoPostRoutes = ['/api/suprimento', '/api/suprimentos'];
+const handleSuprimentoRegistro = (req, res) => {
   try {
-    const { amount, user } = req.body || {};
-    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor do suprimento é inválido.' });
-    const transactions = readData(TRANSACTIONS_DB_FILE);
-    transactions.push({ id: Date.now(), type: 'suprimento', amount, user, date: new Date().toISOString() });
-    writeData(TRANSACTIONS_DB_FILE, transactions);
-    res.status(201).json({ message: 'Suprimento registrado com sucesso!' });
+    const session = getSession(req);
+    const body = req.body || {};
+    const amount = safeNumber(body.amount ?? body.valor ?? body.total ?? body.value);
+    const description = body.description || body.descricao || body.reason || body.motivo || '';
+    const user = body.user || body.usuario || body.vendedor || (session ? (session.username || session.user) : '');
+    const data = body.data || body.date || null;
+
+    const suprimento = registrarSuprimento({ amount, user, description, date: data });
+    res.status(201).json({ message: 'Suprimento registrado com sucesso!', suprimento });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao registrar o suprimento.' });
+    const msg = e && e.message ? e.message : 'Erro interno ao registrar o suprimento.';
+    const status = msg.toLowerCase().includes('inv�lido') || msg.toLowerCase().includes('informado') ? 400 : 500;
+    res.status(status).json({ message: msg });
   }
-});
+};
+suprimentoPostRoutes.forEach((route) => app.post(route, handleSuprimentoRegistro));
 
 // CASH: Transactions history (sangria/suprimento)
 app.get('/api/transactions', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o histórico de caixa.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de caixa.' });
 
     const { type = '', from, to, user = '', search = '', id: idStr, productId: productIdStr, sort: sortKey, page: pageStr, pageSize: pageSizeStr } = req.query || {};
     const typeNorm = lowercaseText(type);
@@ -1194,6 +1435,7 @@ app.get('/api/transactions', (req, res) => {
       type: t.type || '',
       amount: Number(t.amount || 0) || 0,
       saleId: t.saleId || null,
+      description: t.description || t.descricao || t.reason || null,
       items: Array.isArray(t.items) ? t.items.map(it => ({
         productId: it.productId ?? it.id ?? it.codigo ?? null,
         quantity: Number(it.quantity || 0) || 0,
@@ -1203,10 +1445,10 @@ app.get('/api/transactions', (req, res) => {
     }))
       .sort((a, b) => {
         const key = String(sortKey || 'date_desc');
-        if (key === 'date_asc') return (Date.parse(a.date)||0) - (Date.parse(b.date)||0);
-        if (key === 'amount_desc') return (Number(b.amount)||0) - (Number(a.amount)||0);
-        if (key === 'amount_asc') return (Number(a.amount)||0) - (Number(b.amount)||0);
-        return (Date.parse(b.date)||0) - (Date.parse(a.date)||0);
+        if (key === 'date_asc') return (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0);
+        if (key === 'amount_desc') return (Number(b.amount) || 0) - (Number(a.amount) || 0);
+        if (key === 'amount_asc') return (Number(a.amount) || 0) - (Number(b.amount) || 0);
+        return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
       });
 
     const pageNum = Math.max(1, parseInt(pageStr || '1', 10) || 1);
@@ -1220,7 +1462,7 @@ app.get('/api/transactions', (req, res) => {
 
     res.status(200).json({ total, page, pageSize: sizeNum, totalPages, results: paged });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao consultar transações.' });
+    res.status(500).json({ message: 'Erro interno ao consultar transa��es.' });
   }
 });
 
@@ -1229,122 +1471,188 @@ app.delete('/api/transactions/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir transações.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir transacoes.' });
 
     const { id } = req.params;
     const all = readData(TRANSACTIONS_DB_FILE) || [];
     const idx = all.findIndex(t => String(t.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Transação não encontrada.' });
-    all.splice(idx, 1);
+    if (idx < 0) return res.status(404).json({ message: 'Transacao nao encontrada.' });
+    const removida = all.splice(idx, 1)[0];
     writeData(TRANSACTIONS_DB_FILE, all);
-    return res.status(200).json({ message: 'Transação excluída com sucesso.' });
+    if (lowercaseText(removida?.type) === 'suprimento') removeSuprimentoDaBase(removida);
+    return res.status(200).json({ message: 'Transacao excluida com sucesso.' });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao excluir transação.' });
+    res.status(500).json({ message: 'Erro interno ao excluir transacao.' });
   }
 });
-// ============================
-// Importa as bibliotecas necessárias
-// ============================
 
-// 'express' é o framework que usamos pra criar o servidor e as rotas HTTP
-const express = require('express');
+// CAIXA: resumo e fechamento di�rio
+const resumoRoutes = ['/api/caixa/resumo', '/caixa/resumo'];
+const fechamentoRoutes = ['/api/caixa/fechar', '/caixa/fechar'];
+const DIF_TOLERANCIA = 0.01;
 
-// 'fs' (file system) permite ler e gravar arquivos no computador (nativo do Node.js)
-const fs = require('fs');
-
-// 'path' serve pra montar caminhos de arquivos de forma segura (independente do sistema operacional)
-const path = require('path');
-
-
-// ============================
-// Configuração do caminho do arquivo JSON
-// ============================
-
-// Aqui estamos definindo o caminho até o arquivo 'suprimentos.json'
-// __dirname representa a pasta atual (no caso, a pasta 'backend')
-const SUPRIMENTOS_PATH = path.join(__dirname, 'suprimentos.json');
-
-
-// ============================
-// Função para ler os dados do arquivo JSON
-// ============================
-
-// Essa função vai abrir o arquivo 'suprimentos.json' e converter o conteúdo dele pra um objeto JavaScript
-function lerSuprimentos() {
-    // Lê o arquivo como texto usando codificação 'utf8'
-    const data = fs.readFileSync(SUPRIMENTOS_PATH, 'utf8');
-    
-    // Converte o texto JSON para um array de objetos JS
-    // Caso o arquivo esteja vazio ou corrompido, retorna um array vazio []
-    return JSON.parse(data || '[]');
-}
-
-
-// ============================
-// Função para salvar os dados no arquivo JSON
-// ============================
-
-// Essa função sobrescreve o arquivo 'suprimentos.json' com os dados atualizados
-function salvarSuprimentos(suprimentos) {
-    // Converte o array JS para texto JSON formatado com indentação de 2 espaços
-    fs.writeFileSync(SUPRIMENTOS_PATH, JSON.stringify(suprimentos, null, 2), 'utf8');
-}
-
-
-// ============================
-// Criação das rotas de API (usadas pelo frontend)
-// ============================
-
-// Aqui assumimos que você já criou o app express no server.js assim:
-// const app = express();
-
-
-// ----------------------------
-// ROTA GET  ->  /api/suprimentos
-// ----------------------------
-// Essa rota retorna todos os suprimentos registrados
-app.get('/api/suprimentos', (req, res) => {
-    try {
-        // Lê os suprimentos do arquivo JSON
-        const suprimentos = lerSuprimentos();
-
-        // Envia a lista como resposta JSON
-        res.json(suprimentos);
-    } catch (error) {
-        // Caso ocorra erro (arquivo inexistente, JSON inválido, etc.)
-        res.status(500).json({ error: 'Erro ao ler suprimentos.' });
-    }
+app.get(resumoRoutes, async (req, res) => {
+  try {
+    const { data, trocoSessao, ajusteTroco, trocoDelta, trocoEntregue, troco } = req.query || {};
+    const resumo = await calcularResumoDia(data);
+    const trocoEnt = safeNumber(trocoEntregue || troco); // troco efetivamente entregue
+    const trocoDeltaVal = safeNumber(trocoSessao || ajusteTroco || trocoDelta); // esperado - entregue (delta)
+    resumo.ajusteTroco = trocoDeltaVal;
+    resumo.trocoEntregue = trocoEnt;
+    resumo.esperadoCaixaDinheiro += trocoDeltaVal;
+    resumo.esperadoGeral += trocoDeltaVal;
+    return res.status(200).json(resumo);
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Erro ao calcular resumo do caixa.' });
+  }
 });
 
+app.post(fechamentoRoutes, async (req, res) => {
+  try {
+    const session = getSession(req);
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem fechar o caixa.' });
 
-// ----------------------------
-// ROTA POST  ->  /api/suprimentos
-// ----------------------------
-// Essa rota adiciona um novo suprimento ao arquivo JSON
-// 'express.json()' é um middleware que permite ler dados enviados no corpo da requisição (body)
-app.post('/api/suprimentos', express.json(), (req, res) => {
-    try {
-        // Pega o corpo da requisição (os dados enviados pelo frontend)
-        const novoSuprimento = req.body;
+    const body = req.body || {};
+    const dia = toDayKey(body.data || new Date());
+    if (!dia) return res.status(400).json({ message: 'Data do fechamento inv�lida.' });
 
-        // Lê os suprimentos existentes no arquivo
-        const suprimentos = lerSuprimentos();
+    const resumo = await calcularResumoDia(dia);
+    const dinheiroContado = safeNumber(body.dinheiroContado);
+    const cartaoContado = safeNumber(body.cartaoContado || body.cartaoExtrato);
+    const trocoEntregue = safeNumber(body.trocoEntregue || 0);
+    const ajusteTroco = safeNumber(body.ajusteTroco || body.trocoSessao || body.trocoAjuste); // delta (esperado - entregue)
 
-        // Adiciona o novo suprimento no array
-        suprimentos.push(novoSuprimento);
+    const esperadoCaixa = resumo.esperadoCaixaDinheiro + ajusteTroco;
+    const esperadoGeral = resumo.esperadoGeral + ajusteTroco;
 
-        // Salva o array atualizado de volta no arquivo
-        salvarSuprimentos(suprimentos);
+    const difDinheiro = dinheiroContado - esperadoCaixa;
+    const difCartao = cartaoContado - resumo.vendasCartao;
+    const difGeral = difDinheiro + difCartao;
+    const faltaDinheiro = difDinheiro < -DIF_TOLERANCIA;
+    const faltaCartao = difCartao < -DIF_TOLERANCIA;
+    const sobraDinheiro = difDinheiro > DIF_TOLERANCIA;
+    const sobraCartao = difCartao > DIF_TOLERANCIA;
+    const statusFinal = (faltaDinheiro || faltaCartao)
+      ? 'Faltou'
+      : (sobraDinheiro || sobraCartao)
+        ? 'Sobrando'
+        : (Math.abs(difGeral) <= DIF_TOLERANCIA ? 'Bateu' : (difGeral < 0 ? 'Faltou' : 'Sobrando')) ;
 
-        // Retorna uma resposta de sucesso
-        res.status(201).json({ message: 'Suprimento registrado com sucesso!' });
-    } catch (error) {
-        // Se algo der errado, retorna erro 500
-        res.status(500).json({ error: 'Erro ao registrar suprimento.' });
-    }
+    const novoRegistro = {
+      id: Date.now(),
+      data: dia,
+      usuario: session.username || session.user || '',
+      criadoEm: new Date().toISOString(),
+      esperado: { ...resumo, ajusteTroco, trocoEntregue, esperadoCaixaDinheiro: esperadoCaixa, esperadoGeral },
+      contagem: { dinheiroContado, cartaoContado },
+      diferencas: { dinheiro: difDinheiro, cartao: difCartao, geral: difGeral },
+      status: statusFinal
+    };
+    const historico = readClosings();
+    const atualizado = Array.isArray(historico) ? [...historico, novoRegistro] : [novoRegistro];
+    writeClosings(atualizado.sort((a, b) => (Date.parse(b.criadoEm || b.data) || 0) - (Date.parse(a.criadoEm || a.data) || 0)));
+
+    return res.status(201).json({ message: 'Fechamento salvo com sucesso!', fechamento: novoRegistro });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Erro ao salvar fechamento.' });
+  }
+});
+// CAIXA: histórico de fechamentos (admin-only)
+app.get('/api/history/fechamentos', (req, res) => {
+  try {
+    const session = getSession(req);
+    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar fechamentos.' });
+
+    const { dia = '', user = '', from = '', to = '' } = req.query || {};
+    const dayKey = toDayKey(dia);
+    const parseDate = (v) => { if (!v) return null; const d = new Date(v); return Number.isNaN(d.getTime()) ? null : d; };
+    const fromDate = parseDate(from);
+    const toDate = parseDate(to);
+    const userNorm = lowercaseText(user);
+
+    const historico = readClosings() || [];
+    const filtrados = historico.filter((f) => {
+      const fDate = new Date(f.data || f.criadoEm || 0);
+      if (dayKey && toDayKey(f.data) !== dayKey) return false;
+      if (fromDate && fDate < fromDate) return false;
+      if (toDate && fDate > toDate) return false;
+      if (userNorm && !lowercaseText(f.usuario || f.user || '').includes(userNorm)) return false;
+      return true;
+    }).sort((a, b) => (Date.parse(b.data || b.criadoEm || 0) || 0) - (Date.parse(a.data || a.criadoEm || 0) || 0));
+
+    return res.status(200).json(filtrados);
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Erro ao consultar fechamentos.' });
+  }
+});
+// SUPRIMENTOS: delete (admin-only)
+app.delete('/api/suprimentos/:id', (req, res) => {
+  try {
+    const authToken = req.header('x-auth-token');
+    const session = authToken ? activeSessions.get(authToken) : null;
+    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir suprimentos.' });
+
+    const { id } = req.params;
+    const idStr = String(id || '').trim();
+    if (!idStr) return res.status(400).json({ message: 'ID do suprimento invalido.' });
+
+    const transactions = readData(TRANSACTIONS_DB_FILE) || [];
+    const txFiltradas = transactions.filter((t) => !(lowercaseText(t.type) === 'suprimento' && String(t.id || '') === idStr));
+    const removeuTx = txFiltradas.length !== transactions.length;
+    if (removeuTx) writeData(TRANSACTIONS_DB_FILE, txFiltradas);
+
+    const removeuSup = removerSuprimentoPorId(idStr);
+    if (removeuSup || removeuTx) return res.status(200).json({ message: 'Suprimento removido com sucesso.' });
+    return res.status(404).json({ message: 'Suprimento nao encontrado.' });
+  } catch (e) {
+    res.status(500).json({ message: 'Erro interno ao excluir suprimento.' });
+  }
+});
+
+// SUPRIMENTOS: leitura consolidada
+app.get('/api/suprimentos', (req, res) => {
+  try {
+    const { ativos, ativosAposFechamento, apenasAtivos } = req.query || {};
+    const ativosFlag = [ativos, ativosAposFechamento, apenasAtivos]
+      .map((v) => String(v || '').trim().toLowerCase())
+      .some((v) => ['1', 'true', 'sim', 'yes'].includes(v));
+    const corteRaw = ativosFlag ? getLastClosingDate() : null;
+    const corte = (corteRaw && !Number.isNaN(corteRaw.getTime()) && corteRaw <= new Date()) ? corteRaw : null;
+
+    const lista = readSuprimentos();
+    const base = Array.isArray(lista) ? lista : [];
+    const filtrada = (ativosFlag && corte)
+      ? base.filter((s) => {
+        const data = new Date(s.date || s.data);
+        if (Number.isNaN(data.getTime())) return true; // nao esconde registros sem data valida
+        return data > corte;
+      })
+      : base;
+
+    const formatada = filtrada.map((s) => ({
+      id: s.id,
+      descricao: s.description || null,
+      description: s.description || null,
+      valor: s.amount,
+      amount: s.amount,
+      user: s.user,
+      data: s.date,
+      date: s.date
+    }));
+    res.json(formatada);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao ler suprimentos.' });
+  }
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor Styllo Fashion ouvindo em http://localhost:${PORT}`); 
+  console.log(`Servidor Styllo Fashion ouvindo em http://localhost:${PORT}`);
 });
+
+
+
+

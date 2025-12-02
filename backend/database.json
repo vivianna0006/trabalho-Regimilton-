@@ -20,5 +20,16 @@
     "telefone": "56211541145",
     "createdAt": "2025-10-13T00:52:19.055Z",
     "updatedAt": "2025-10-13T00:52:19.055Z"
+  },
+  {
+    "username": "54527988034",
+    "password": "$2b$10$atbTa/MPN7pYi99gZ/MeHOdCIUgAYRjwiQlpwJYR9zXrcGlcfGQO2",
+    "cargo": "Funcionario",
+    "nomeCompleto": "luiza pereira de santos",
+    "cpf": "54527988034",
+    "email": "luiz@gmail.com",
+    "telefone": "56211541145",
+    "createdAt": "2025-12-02T01:27:17.830Z",
+    "updatedAt": "2025-12-02T01:27:17.830Z"
   }
 ]

@@ -9,7 +9,7 @@
     --sf-surface: #ffffff;
 }
 
-body > header {
+body>header {
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 10px 30px rgba(17, 24, 39, 0.08);
     padding: 0 2.5rem;
@@ -77,12 +77,12 @@ nav {
 }
 
 .navbar-links a:hover,
-.navbar-links li.active > a {
+.navbar-links li.active>a {
     color: var(--sf-primary);
 }
 
 .navbar-links a:hover::after,
-.navbar-links li.active > a::after {
+.navbar-links li.active>a::after {
     transform: scaleX(1);
 }
 
@@ -377,7 +377,7 @@ nav {
 }
 
 @media (max-width: 1024px) {
-    body > header {
+    body>header {
         padding: 0 1.5rem;
     }
 
@@ -405,7 +405,7 @@ nav {
 }
 
 @media (max-width: 640px) {
-    body > header {
+    body>header {
         padding: 0 1rem;
     }
 

@@ -1,68 +1,89 @@
-﻿.sangria-content {
-    max-width: 720px;
+.sangria-content {
     width: 100%;
+    max-width: 1160px;
+}
+
+.sangria-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 1.5rem;
     align-items: stretch;
 }
 
 .sangria-card {
-    width: 100%;
-    background-color: #ffffff;
-    padding: 2.5rem 2.5rem 2rem;
+    background: #ffffff;
     border-radius: 12px;
+    padding: 1.75rem;
     box-shadow: 0 18px 45px rgba(17, 24, 39, 0.08);
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.25rem;
+    height: 100%;
 }
 
-.sangria-card__header h1 {
-    margin: 0 0 0.5rem;
-    color: #2c3e50;
-    font-size: 2rem;
+.sangria-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin: 0 0 0.25rem;
     font-weight: 700;
 }
 
-.sangria-card__header p {
+.sangria-card__header h1 {
     margin: 0;
+    color: #1f2937;
+    font-size: 1.9rem;
+}
+
+.sangria-card__header p {
+    margin: 0.35rem 0 0;
     color: #6b7280;
     font-size: 1rem;
+}
+
+.sangria-lead {
+    margin: 0;
+    color: #6b7280;
 }
 
 .sangria-form {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: 1.25rem;
 }
 
 .form-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
 
 .input-group label {
-    font-weight: 600;
+    font-weight: 700;
     color: #374151;
 }
 
 .input-group input {
-    padding: 0.85rem 1rem;
+    padding: 0.9rem 1rem;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 1rem;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    background: #ffffff;
 }
 
 .input-group input:focus {
     outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
 }
 
 .input-hint {
@@ -70,61 +91,176 @@
     color: #9ca3af;
 }
 
+.sangria-safe-hint {
+    background: #fff1f2;
+    border: 1px solid #ffe4e6;
+    color: #b91c1c;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-weight: 600;
+}
+
 .sangria-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.75rem;
     justify-content: flex-end;
 }
 
 .sangria-submit-btn,
 .sangria-reset-btn {
-    min-width: 160px;
-    padding: 0.85rem 1.6rem;
-    border-radius: 8px;
+    min-width: 170px;
+    padding: 0.9rem 1.45rem;
+    border-radius: 10px;
     border: none;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
-/* mantém o vermelho na ação principal de sangria */
 .sangria-submit-btn {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
+    background: linear-gradient(135deg, #f87171, #ef4444);
     color: #ffffff;
-    box-shadow: 0 14px 28px rgba(239, 68, 68, 0.32);
+    box-shadow: 0 14px 26px rgba(239, 68, 68, 0.28);
 }
 
 .sangria-submit-btn:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    box-shadow: 0 18px 34px rgba(220, 38, 38, 0.38);
     transform: translateY(-2px);
+    box-shadow: 0 18px 34px rgba(239, 68, 68, 0.36);
+}
+
+.sangria-submit-btn:disabled,
+.sangria-submit-btn.is-loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }
 
 .sangria-reset-btn {
     background: #ffffff;
-    color: #ffffff;
-    border: 1px solid rgba(37, 99, 235, 0.35);
-    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.12);
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
 }
 
 .sangria-reset-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
 }
 
-@media (max-width: 768px) {
-    .sangria-card {
-        padding: 2rem 1.75rem;
-    }
+.sangria-side-card {
+    background: radial-gradient(circle at 20% 20%, rgba(248, 113, 113, 0.14), transparent 48%), #ffffff;
+    color: #1f2937;
+    border: 1px solid #ffe4e6;
+}
 
+.sangria-side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sangria-side-header h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+}
+
+.sangria-side-card .sangria-lead {
+    color: #6b7280;
+}
+
+.sangria-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: #fff1f2;
+    color: #b91c1c;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 1px solid #fecdd3;
+}
+
+.sangria-tips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.sangria-tips li {
+    position: relative;
+    padding: 0.85rem 1rem 0.85rem 1.35rem;
+    background: #fff7f7;
+    border: 1px solid #fde2e3;
+    border-radius: 10px;
+    color: #374151;
+}
+
+.sangria-tips li::before {
+    content: "*";
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ef4444;
+    font-size: 1.2rem;
+}
+
+.sangria-summary {
+    margin-top: 0.5rem;
+    padding: 1rem;
+    background: #fff1f2;
+    border-radius: 10px;
+    border: 1px solid #ffe4e6;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sangria-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.2rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: #ffffff;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 12px 26px rgba(239, 68, 68, 0.18);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.sangria-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(239, 68, 68, 0.28);
+}
+
+@media (max-width: 980px) {
+    .sangria-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
     .form-row {
         grid-template-columns: 1fr;
     }
 
     .sangria-actions {
-        justify-content: stretch;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .sangria-submit-btn,
@@ -132,14 +268,9 @@
         width: 100%;
         min-width: 0;
     }
-}
 
-@media (max-width: 480px) {
-    .sangria-card__header h1 {
-        font-size: 1.6rem;
-    }
-
-    .sangria-card__header p {
-        font-size: 0.95rem;
+    .sangria-side-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

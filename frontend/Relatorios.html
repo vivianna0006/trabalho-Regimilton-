@@ -1,169 +1,449 @@
 <!DOCTYPE html>
-<html lang="pt-BR"> <!-- Define o idioma da página -->
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8"> <!-- Define o padrão de caracteres (UTF-8) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Responsividade em celulares -->
-    <title>Relatórios de Vendas - Styllo Fashion Modas</title> <!-- Título da aba do navegador -->
-
-    <!-- Importa o arquivo CSS do seu projeto (pode ser o mesmo usado nas outras páginas) -->
-    <link rel="stylesheet" href="style.css">
-
-    <!-- Importa a biblioteca Chart.js para criar os gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body>
-    <!-- O menu será carregado automaticamente pelo arquivo frontend/auth.js -->
-    <nav></nav>
-
-    <!-- Conteúdo principal da página -->
-    <main class="container">
-        <h1>📊 Relatórios de Vendas</h1> <!-- Título principal -->
-        <p>Visualize o desempenho de vendas da loja por mês e por ano.</p> <!-- Texto explicativo -->
-
-        <!-- Seção do gráfico mensal -->
-        <section class="relatorio-section">
-            <h2>Vendas Mensais (2025)</h2> <!-- Título do gráfico mensal -->
-            <canvas id="graficoMensal"></canvas> <!-- Área onde o gráfico será desenhado -->
-        </section>
-
-        <!-- Seção do gráfico anual -->
-        <section class="relatorio-section">
-            <h2>Vendas Anuais (2021–2025)</h2> <!-- Título do gráfico anual -->
-            <canvas id="graficoAnual"></canvas> <!-- Área onde o gráfico será desenhado -->
-        </section>
-    </main>
-
-    <!-- Importa o script que monta o menu e verifica o login -->
-    <script src="frontend/auth.js"></script>
-
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Função que carrega as vendas do backend
-    async function carregarVendas() {
-        try {
-            const resposta = await fetch('../backend/sales.json'); // caminho pro arquivo de vendas
-            const vendas = await resposta.json(); // converte o JSON em objeto JS
-
-            console.log('📦 Dados de vendas carregados:', vendas);
-
-            // --- EXEMPLO DE PROCESSAMENTO ---
-            // Aqui você adapta conforme a estrutura do seu sales.json
-            // (vou supor que tem { data: "2025-03-01", total: 123.45 } em cada venda)
-
-            // Agrupa por mês e por ano
-            const vendasPorMes = Array(12).fill(0);
-            const vendasPorAno = {};
-
-            vendas.forEach(v => {
-                const data = new Date(v.data);
-                const mes = data.getMonth(); // 0 = janeiro
-                const ano = data.getFullYear();
-
-                vendasPorMes[mes] += v.total;
-                vendasPorAno[ano] = (vendasPorAno[ano] || 0) + v.total;
-            });
-
-            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            const anos = Object.keys(vendasPorAno).sort();
-
-            // --- GRÁFICO MENSAL ---
-            new Chart(document.getElementById('graficoMensal'), {
-                type: 'bar',
-                data: {
-                    labels: meses,
-                    datasets: [{
-                        label: 'Vendas (R$)',
-                        data: vendasPorMes,
-                        borderWidth: 1,
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: 'Vendas por Mês' }
-                    },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // --- GRÁFICO ANUAL ---
-            new Chart(document.getElementById('graficoAnual'), {
-                type: 'line',
-                data: {
-                    labels: anos,
-                    datasets: [{
-                        label: 'Total Anual (R$)',
-                        data: anos.map(a => vendasPorAno[a]),
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        title: { display: true, text: 'Crescimento de Vendas Anual' }
-                    },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-        } catch (erro) {
-            console.error('❌ Erro ao carregar vendas:', erro);
-            alert('Não foi possível carregar os dados de vendas.');
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatorios - Styllo Fashion Modas</title>
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="componentes.css">
+  <link rel="stylesheet" href="notifications.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --report-card-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --report-border: #e5e7eb;
     }
+    body { background: #f7f8fb; margin: 0; }
+    .reports-container {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .reports-hero {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      background: linear-gradient(120deg, #1d4ed8, #0ea5e9);
+      color: #fff;
+      box-shadow: var(--report-card-shadow);
+    }
+    .reports-hero h1 { margin: 4px 0 8px; font-size: 24px; line-height: 1.25; }
+    .reports-hero p { margin: 0; max-width: 720px; color: rgba(255, 255, 255, 0.85); }
+    .reports-hero a { color: #fff; text-decoration: underline; font-weight: 600; }
+    .panel {
+      background: #fff;
+      border: 1px solid var(--report-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: var(--report-card-shadow);
+    }
+    .switchers {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .switch-group { display: flex; gap: 8px; align-items: center; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      background: #eef2ff;
+      color: #4338ca;
+      width: fit-content;
+    }
+    .pill.success { background: #ecfdf3; color: #166534; }
+    .pill.alert { background: #fef2f2; color: #b91c1c; }
+    .pill.neutral { background: #f1f5f9; color: #0f172a; }
+    .toggle-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .toggle-btn.active {
+      background: #1d4ed8;
+      color: #fff;
+      border-color: #1d4ed8;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+    }
+    #chart-wrapper {
+      min-height: 240px;
+      height: min(320px, 50vh);
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+    }
+    canvas {
+      width: 100%;
+      height: 100% !important;
+      min-height: 240px;
+    }
+    .muted { color: #6b7280; font-size: 14px; margin: 6px 0 0; }
+    .mini-history {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      border-top: 1px solid var(--report-border);
+      padding-top: 8px;
+    }
+    .mini-history__item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .mini-history__item strong { color: #0f172a; }
+    .mini-history__item small { color: #6b7280; }
+    @media (max-width: 720px) { .reports-hero { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav></nav>
+  </header>
+  <main class="main-content reports-container">
+    <section class="reports-hero">
+      <div>
+        <p class="muted" style="color: rgba(255,255,255,0.82);">Painel de relatorios</p>
+        <h1>Peças mais vendidas e devolvidas</h1>
+        <p>Escolha entre vendas ou devoluções e alterne entre visão mensal ou anual. Agrupamos a mesma peça somando quantidade e valor arrecadado.</p>
+      </div>
+      <div>
+        <a href="historico.html?tab=vendas">Abrir historico completo</a>
+      </div>
+    </section>
 
-    // Chama a função ao abrir a página
-    carregarVendas();
+    <section class="panel">
+      <div class="switchers">
+        <div class="switch-group">
+          <span class="pill neutral">Tipo</span>
+          <button class="toggle-btn active" data-type="vendas" id="btn-vendas">Vendas</button>
+          <button class="toggle-btn" data-type="devolucoes" id="btn-devolucoes">Devoluções</button>
+        </div>
+        <div class="switch-group">
+          <span class="pill neutral">Periodo</span>
+          <button class="toggle-btn active" data-period="mensal" id="btn-mensal">Mensal</button>
+          <button class="toggle-btn" data-period="anual" id="btn-anual">Anual</button>
+        </div>
+        <div class="switch-group" id="periodo-selectors">
+          <span class="pill neutral">PerÇ­odo alvo</span>
+          <select id="select-mes" class="toggle-btn" style="min-width:150px;"></select>
+          <select id="select-ano" class="toggle-btn" style="min-width:120px; display:none;"></select>
+        </div>
+      </div>
+      <div id="chart-wrapper">
+        <canvas id="chart-principal"></canvas>
+      </div>
+      <p class="muted" id="chart-resumo"></p>
+      <div class="mini-history" id="mini-historico"></div>
+    </section>
+  </main>
 
-    // Atualiza automaticamente a cada 1 minuto
-    setInterval(carregarVendas, 60000);
-});
-</script>
+  <script src="api-client.js"></script>
+  <script src="notifications.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const charts = {};
+      const palette = ['#2563eb', '#f97316', '#16a34a', '#a855f7', '#0ea5e9', '#ef4444', '#14b8a6', '#f59e0b'];
+      const state = { type: 'vendas', period: 'mensal', targetMonth: '', targetYear: '' };
+      const dataStore = { vendas: { raw: [] }, devolucoes: { raw: [] } };
 
+      const toJson = async (resp) => { try { return await resp.json(); } catch { return null; } };
+      const safeDate = (value) => { const d = new Date(value); return Number.isNaN(d.getTime()) ? null : d; };
+      const formatItemName = (item) => {
+        const raw = (item?.nome || item?.name || item?.productName || '').toString().trim();
+        if (raw) return raw;
+        const pid = item?.id || item?.productId || item?.codigo;
+        return pid ? `Item ${pid}` : 'Item sem nome';
+      };
+      const formatMoney = (v) => `R$ ${(Number(v || 0) || 0).toFixed(2)}`;
+      const formatDate = (value) => { const d = safeDate(value); return d ? d.toLocaleDateString('pt-BR') : '-'; };
 
-    <!-- CSS interno apenas para essa página (pode colocar no style.css se preferir) -->
-    <style>
-        /* Define o estilo geral da página */
-        body {
-            font-family: Arial, sans-serif; /* Fonte usada no texto */
-            background: #fafafa; /* Cor de fundo clara */
-            margin: 0; /* Remove margens externas */
-            padding: 0; /* Remove espaçamento interno */
+      const sortMonths = (keys) => keys
+        .map((k) => ({ key: k, date: safeDate(`${k}-01T00:00:00Z`) }))
+        .filter((k) => k.date)
+        .sort((a, b) => a.date - b.date)
+        .map((k) => k.key);
+      const sortYears = (keys) => keys
+        .map((k) => Number(k))
+        .filter((k) => !Number.isNaN(k))
+        .sort((a, b) => a - b)
+        .map((k) => String(k));
+      const limitMonths = (orderedKeys) => orderedKeys.length <= 12 ? orderedKeys : orderedKeys.slice(orderedKeys.length - 12);
+
+      const buildRanking = (entries, targetKey, period) => {
+        const totals = new Map();
+        entries.forEach((entry) => {
+          const d = safeDate(entry.date || entry.data);
+          if (!d) return;
+          const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const yearKey = `${d.getFullYear()}`;
+          const key = period === 'mensal' ? monthKey : yearKey;
+          if (!targetKey || key !== targetKey) return;
+
+          const rawItems = Array.isArray(entry.items) ? entry.items : [];
+          const items = rawItems.length ? rawItems : (entry.produto ? [entry.produto] : []);
+
+          items.forEach((it) => {
+            const name = formatItemName(it);
+            const qty = Number(it.quantity || it.quantidade || it.qtd || it.qtde || it.qtdade || 1) || 1;
+            const unit = Number(it.amount || it.valor || it.total || it.preco || 0) || 0;
+            const amount = (unit || 0) * qty;
+            const prev = totals.get(name) || { qty: 0, amount: 0 };
+            totals.set(name, { qty: prev.qty + qty, amount: prev.amount + amount });
+          });
+        });
+        return Array.from(totals.entries())
+          .map(([name, info]) => ({ name, qty: info.qty, amount: info.amount }))
+          .sort((a, b) => (b.qty - a.qty) || (b.amount - a.amount));
+      };
+
+      const renderChart = (canvasId, { type = 'bar', labels = [], datasets = [], title = '' }) => {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+        if (charts[canvasId]) charts[canvasId].destroy();
+        charts[canvasId] = new Chart(ctx, {
+          type,
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top' },
+              title: { display: Boolean(title), text: title },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const label = context.label || '';
+                    const value = context.parsed.y;
+                    const ds = context.dataset || {};
+                    const amount = Array.isArray(ds.__amounts) ? ds.__amounts[context.dataIndex] : null;
+                    if (amount != null) return `${label}: ${value} un. (${formatMoney(amount)})`;
+                    return `${label}: ${value} un.`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { beginAtZero: true, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      };
+
+      const renderMiniHistory = (entries, emptyMsg, badgePrefix) => {
+        const container = document.getElementById('mini-historico');
+        if (!container) return;
+        container.innerHTML = '';
+        const list = Array.isArray(entries) ? entries.slice(0, 5) : [];
+        if (!list.length) {
+          container.innerHTML = `<p class="muted">${emptyMsg}</p>`;
+          return;
+        }
+        list.forEach((item) => {
+          const row = document.createElement('div');
+          row.className = 'mini-history__item';
+          row.innerHTML = `
+            <div>
+              <strong>${item.name}</strong><br>
+              <small>${formatDate(item.date)}${item.seller ? ' • ' + item.seller : ''}</small>
+            </div>
+            <span class="pill neutral">${badgePrefix} ${item.badge || ''}</span>
+          `;
+          container.appendChild(row);
+        });
+      };
+
+      const collectPeriods = (entries) => {
+        const months = new Set();
+        const years = new Set();
+        entries.forEach((entry) => {
+          const d = safeDate(entry.date || entry.data);
+          if (!d) return;
+          months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+          years.add(`${d.getFullYear()}`);
+        });
+        return {
+          months: limitMonths(sortMonths(Array.from(months))),
+          years: sortYears(Array.from(years))
+        };
+      };
+
+      const montarVisao = () => {
+        const store = dataStore[state.type];
+        if (!store || !Array.isArray(store.raw)) return;
+        const targetKey = state.period === "mensal" ? state.targetMonth : state.targetYear;
+        const ranking = buildRanking(store.raw, targetKey, state.period);
+        const top = ranking.slice(0, 8);
+        const labels = top.map((r) => r.name);
+        const quantities = top.map((r) => r.qty);
+        const amounts = top.map((r) => r.amount);
+
+        if (!labels.length) {
+          const msg = state.type === "vendas"
+            ? "Nenhum registro de vendas no periodo selecionado."
+            : "Nenhuma devolucao no periodo selecionado.";
+          renderMiniHistory([], msg, "");
+          const resumo = document.getElementById("chart-resumo");
+          if (resumo) resumo.textContent = msg;
+          if (charts["chart-principal"]) charts["chart-principal"].destroy();
+          return;
         }
 
-        /* Define a área principal */
-        .container {
-            padding: 2rem; /* Espaçamento interno */
+        const ds = {
+          label: state.type === "vendas" ? "Vendas (qtd)" : "Devolucoes (qtd)",
+          data: quantities,
+          backgroundColor: palette[0],
+          borderColor: palette[0],
+          borderWidth: 1.5,
+          __amounts: amounts
+        };
+
+        renderChart("chart-principal", {
+          type: "bar",
+          labels,
+          datasets: [ds],
+          title: state.type === "vendas"
+            ? "Pecas mais vendidas (" + (state.period === "mensal" ? "mes" : "ano") + " " + (targetKey || "") + ")"
+            : "Pecas mais devolvidas (" + (state.period === "mensal" ? "mes" : "ano") + " " + (targetKey || "") + ")"
+        });
+
+        const resumo = document.getElementById("chart-resumo");
+        if (resumo) {
+          resumo.textContent = "Top " + labels.length + " pecas por quantidade no periodo selecionado. Tooltip mostra quantidade e valor acumulado.";
         }
 
-        /* Estilo do título principal */
-        h1 {
-            text-align: center; /* Centraliza o texto */
-            margin-bottom: 1rem; /* Espaço abaixo do título */
-        }
+        const recent = top.map((item) => ({
+          name: item.name,
+          date: new Date().toISOString(),
+          seller: "",
+          badge: item.qty + " un. - " + formatMoney(item.amount)
+        }));
+        renderMiniHistory(recent, "", state.type === "vendas" ? "Venda" : "Devolucao");
+      };
 
-        /* Cada bloco de relatório (gráfico) */
-        .relatorio-section {
-            background: #fff; /* Fundo branco */
-            border-radius: 12px; /* Cantos arredondados */
-            padding: 1.5rem; /* Espaçamento interno */
-            box-shadow: 0 3px 8px rgba(0,0,0,0.1); /* Sombra leve */
-            margin: 1.5rem auto; /* Centraliza e adiciona espaçamento vertical */
-            max-width: 800px; /* Largura máxima */
-        }
+      const carregarRelatorios = async () => {
+        try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) { }
+        try {
+          const [salesResp, refundsResp] = await Promise.all([
+            ApiClient.fetch('/history/sales-all', { cache: 'no-store' }),
+            ApiClient.fetch('/history/devolucoes', { cache: 'no-store' })
+          ]);
+          const salesData = await toJson(salesResp);
+          const refundData = await toJson(refundsResp);
+          const sales = Array.isArray(salesData) ? salesData : [];
+          const refunds = Array.isArray(refundData) ? refundData : [];
 
-        /* Define o tamanho do canvas (gráfico) */
-        canvas {
-            width: 100%; /* Ocupa toda a largura do bloco */
-            height: 400px; /* Altura fixa dos gráficos */
+          dataStore.vendas = { raw: sales, ...collectPeriods(sales) };
+          dataStore.devolucoes = { raw: refunds, ...collectPeriods(refunds) };
+
+          atualizarPeriodos();
+          montarVisao();
+        } catch (e) {
+          console.error('Erro ao montar relatorios', e);
+          try { showToast('Nao foi possivel montar os relatorios.', 'error'); } catch (_) { }
         }
-    </style>
+      };
+
+      const preencherSelect = (select, values, formatter = (v) => v) => {
+        if (!select) return;
+        select.innerHTML = '';
+        values.forEach((value) => {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = formatter(value);
+          select.appendChild(opt);
+        });
+      };
+
+      const atualizarPeriodos = () => {
+        const store = dataStore[state.type] || {};
+        const months = Array.isArray(store.months) ? store.months : [];
+        const years = Array.isArray(store.years) ? store.years : [];
+        const monthSelect = document.getElementById('select-mes');
+        const yearSelect = document.getElementById('select-ano');
+
+        preencherSelect(monthSelect, months, (v) => {
+          const [y, m] = v.split('-');
+          return `${m}/${y}`;
+        });
+        preencherSelect(yearSelect, years);
+
+        if (state.period === 'mensal') {
+          if (!months.includes(state.targetMonth)) state.targetMonth = months[months.length - 1] || '';
+          if (monthSelect) {
+            monthSelect.value = state.targetMonth;
+            monthSelect.style.display = 'inline-flex';
+          }
+          if (yearSelect) yearSelect.style.display = 'none';
+        } else {
+          if (!years.includes(state.targetYear)) state.targetYear = years[years.length - 1] || '';
+          if (yearSelect) {
+            yearSelect.value = state.targetYear;
+            yearSelect.style.display = 'inline-flex';
+          }
+          if (monthSelect) monthSelect.style.display = 'none';
+        }
+      };
+
+      const toggleButtons = (btnActive, btnInactive, key, value) => {
+        if (btnActive && btnInactive) {
+          btnActive.classList.add('active');
+          btnInactive.classList.remove('active');
+          state[key] = value;
+          atualizarPeriodos();
+          montarVisao();
+        }
+      };
+
+      document.getElementById('btn-vendas')?.addEventListener('click', () => toggleButtons(
+        document.getElementById('btn-vendas'), document.getElementById('btn-devolucoes'), 'type', 'vendas'
+      ));
+      document.getElementById('btn-devolucoes')?.addEventListener('click', () => toggleButtons(
+        document.getElementById('btn-devolucoes'), document.getElementById('btn-vendas'), 'type', 'devolucoes'
+      ));
+      document.getElementById('btn-mensal')?.addEventListener('click', () => toggleButtons(
+        document.getElementById('btn-mensal'), document.getElementById('btn-anual'), 'period', 'mensal'
+      ));
+      document.getElementById('btn-anual')?.addEventListener('click', () => toggleButtons(
+        document.getElementById('btn-anual'), document.getElementById('btn-mensal'), 'period', 'anual'
+      ));
+
+      document.getElementById('select-mes')?.addEventListener('change', (e) => {
+        state.targetMonth = e.target.value;
+        montarVisao();
+      });
+      document.getElementById('select-ano')?.addEventListener('change', (e) => {
+        state.targetYear = e.target.value;
+        montarVisao();
+      });
+
+      carregarRelatorios();
+      setInterval(carregarRelatorios, 60000);
+    });
+  </script>
 </body>
 </html>

@@ -96,10 +96,14 @@
       if (/[A-Za-z]/.test(v)) return; // se tiver letras, não mascarar
       let digits = v.replace(/\D/g, '');
       if (digits.length > 11) digits = digits.slice(0, 11);
-      const masked = digits
-        .replace(/(\d{3})(\d)/, '.')
-        .replace(/(\d{3})(\d)/, '.')
-        .replace(/(\d{3})(\d{1,2})$/, '-');
+      let masked = digits;
+      if (digits.length > 3 && digits.length <= 6) {
+        masked = `${digits.slice(0, 3)}.${digits.slice(3)}`;
+      } else if (digits.length > 6 && digits.length <= 9) {
+        masked = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+      } else if (digits.length > 9) {
+        masked = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+      }
       loginUserInput.value = masked;
     });
   }

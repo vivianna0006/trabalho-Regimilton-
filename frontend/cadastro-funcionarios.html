@@ -1,208 +1,173 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Funcionários</title>
-  <link rel="stylesheet" href="main.css">
-  <link rel="stylesheet" href="menu.css">
-  <link rel="stylesheet" href="componentes.css">
-  <link rel="stylesheet" href="notifications.css">
-  <link rel="stylesheet" href="cadastro-funcionarios.css">
-  <style>.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Funcionários | Styllo Fashion</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="stylesheet" href="componentes.css">
+    <link rel="stylesheet" href="cadastro-funcionarios.css">
 </head>
+
 <body>
-  <header><nav></nav></header>
-  <main class="main-content funcionarios-dashboard">
-    <section class="funcionarios-header">
-      <div class="funcionarios-header__content">
-        <h1>Cadastro de Funcionários</h1>
-        <p>Gerencie o acesso e os dados de contato. Busque, filtre e visualize os colaboradores já cadastrados.</p>
-        <div class="funcionarios-header__search">
-          <span class="funcionarios-header__hint">Dica: para funcionários, o usuário é o CPF automaticamente.</span>
+    <header>
+        <nav></nav>
+    </header>
+
+    <main class="main-container">
+
+        <div class="left-column">
+            <section class="card form-card">
+                <header>
+                    <h2><i class="fa-solid fa-user-plus"></i> Novo Cadastro</h2>
+                    <div class="steps-indicator">
+                        <span class="step active" id="step-indicator-1">1. Dados Pessoais</span>
+                        <span class="line"></span>
+                        <span class="step" id="step-indicator-2">2. Dados de Acesso</span>
+                    </div>
+                </header>
+
+                <form id="form-cadastro">
+                    <div id="step-1" class="form-step">
+                        <div class="input-group big-input">
+                            <label>Nome Completo</label>
+                            <input type="text" id="nome" name="nome" placeholder="Ex: Maria Silva" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-group big-input">
+                                <label>CPF</label>
+                                <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14"
+                                    required>
+                            </div>
+                            <div class="input-group big-input">
+                                <label>Telefone</label>
+                                <input type="text" id="telefone" name="telefone" placeholder="(00) 00000-0000"
+                                    maxlength="15" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group big-input">
+                            <label>Email</label>
+                            <input type="email" id="email" name="email" placeholder="email@exemplo.com" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="btn-limpar" class="btn-secondary btn-large">Limpar</button>
+                            <button type="button" id="btn-proximo" class="btn-primary btn-large">Próxima Etapa <i
+                                    class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="step-2" class="form-step hidden">
+                        <div class="input-group big-input">
+                            <label>Perfil de Acesso</label>
+                            <select id="cargo" name="cargo" required>
+                                <option value="Funcionario" selected>Funcionário</option>
+                                <option value="Administrador">Gerente / Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group big-input">
+                            <label>Usuário (Login)</label>
+                            <input type="text" id="username" name="username" placeholder="CPF será usado" readonly
+                                required>
+                            <small id="username-hint">O login será o CPF automaticamente.</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="input-group big-input password-group">
+                                <label>Senha</label>
+                                <div class="input-wrapper">
+                                    <input type="password" id="password" name="password" placeholder="******" required>
+                                    <i class="fa-regular fa-eye" id="toggle-pass"></i>
+                                </div>
+                            </div>
+                            <div class="input-group big-input password-group">
+                                <label>Confirmar</label>
+                                <div class="input-wrapper">
+                                    <input type="password" id="confirm-password" placeholder="******" required>
+                                    <i class="fa-regular fa-eye" id="toggle-confirm-pass"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="btn-voltar" class="btn-secondary btn-large"><i
+                                    class="fa-solid fa-arrow-left"></i> Voltar</button>
+                            <button type="submit" id="btn-salvar" class="btn-success btn-large"><i
+                                    class="fa-solid fa-check"></i> Finalizar Cadastro</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="mensagem-status" class="status-box hidden"></div>
+            </section>
         </div>
-      </div>
-    </section>
 
-    <div class="funcionarios-content">
-      <div class="form-column">
-        <form id="cadastro-form" novalidate>
-          <div class="form-box access-box">
-            <header class="form-header">
-              <h2>Dados de acesso</h2>
-              <p class="intro-p">Defina o usuário e a senha iniciais, além do perfil de acesso.</p>
-            </header>
-            <fieldset class="form-section">
-              <legend>Dados de acesso</legend>
-              <div class="form-grid">
-                <div class="input-group" data-field="username">
-                  <label for="novo-username">Nome de usuário</label>
-                  <input type="text" id="novo-username" autocomplete="off" required>
-                  <small class="input-hint">Sincronizado com o CPF (000.000.000-00). </small>
-                  <span class="input-feedback" id="feedback-username"></span>
-                </div>
-                <div class="input-group" data-field="password">
-                  <label for="nova-senha">Senha inicial</label>
-                  <div class="input-wrapper">
-                    <input type="password" id="nova-senha" autocomplete="new-password" required>
-                    <button type="button" class="eye-toggle open" data-target="nova-senha" aria-label="Ocultar senha" title="Ocultar senha">
-                      <svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
-                      <svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/><path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </button>
-                  </div>
-                  <small class="input-hint">Mínimo de 6 caracteres. Utilize letras e números.</small>
-                  <span class="input-feedback" id="feedback-password"></span>
-                </div>
-                <div class="input-group" data-field="confirmPassword">
-                  <label for="confirmar-senha">Confirmar senha</label>
-                  <div class="input-wrapper">
-                    <input type="password" id="confirmar-senha" autocomplete="new-password" required>
-                    <button type="button" class="eye-toggle open" data-target="confirmar-senha" aria-label="Ocultar senha" title="Ocultar senha">
-                      <svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
-                      <svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/><path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </button>
-                  </div>
-                  <small class="input-hint">Repita a senha para confirmar.</small>
-                  <span class="input-feedback" id="feedback-confirmar-senha"></span>
-                </div>
-                <div class="input-group" data-field="cargo">
-                  <label for="novo-cargo">Perfil de acesso</label>
-                  <select id="novo-cargo" required>
-                    <option value="Administrador">Gerente</option>
-                    <option value="Funcionario" selected>Funcionário</option>
-                  </select>
-                </div>
-              </div>
-            </fieldset>
-          </div>
+        <div class="right-column">
 
-          <div class="form-box profile-box">
-            <header class="form-header">
-              <h2>Dados do funcionário</h2>
-              <p class="intro-p">Informações pessoais e meios de contato.</p>
-            </header>
-            <fieldset class="form-section">
-              <legend>Dados do funcionário</legend>
-              <div class="form-grid">
-                <div class="input-group" data-field="nomeCompleto">
-                  <label for="nome-completo">Nome completo</label>
-                  <input type="text" id="nome-completo" autocomplete="name" required>
-                  <span class="input-feedback" id="feedback-nome-completo"></span>
+            <section class="card preview-card">
+                <header>
+                    <h2><i class="fa-solid fa-id-card"></i> Pré-visualização</h2>
+                </header>
+                <div class="cracha-container">
+                    <div class="cracha-row"><strong>Nome:</strong> <span id="prev-nome">-</span></div>
+                    <div class="cracha-row"><strong>Usuário:</strong> <span id="prev-user" class="highlight">-</span>
+                    </div>
+                    <div class="cracha-row"><strong>CPF:</strong> <span id="prev-cpf">-</span></div>
+                    <div class="cracha-row"><strong>Perfil:</strong> <span id="prev-cargo" class="badge">-</span></div>
+                    <hr>
+                    <div class="cracha-row"><strong>Email:</strong> <span id="prev-email">-</span></div>
+                    <div class="cracha-row"><strong>Tel:</strong> <span id="prev-telefone">-</span></div>
                 </div>
-                <div class="input-group" data-field="cpf">
-                  <label for="cpf">CPF</label>
-                  <input type="text" id="cpf" inputmode="numeric" required>
-                  <span class="input-feedback" id="feedback-cpf"></span>
-                </div>
-                <div class="input-group" data-field="email">
-                  <label for="email">Email</label>
-                  <input type="email" id="email" autocomplete="email" required>
-                  <span class="input-feedback" id="feedback-email"></span>
-                </div>
-                <div class="input-group" data-field="telefone">
-                  <label for="telefone">Telefone</label>
-                  <input type="tel" id="telefone" autocomplete="tel" required>
-                  <span class="input-feedback" id="feedback-telefone"></span>
-                </div>
-              </div>
-            </fieldset>
-            <div class="form-actions">
-              <button id="reset-btn" type="button" class="secondary">Limpar</button>
-              <button id="submit-btn" class="btn-primary" type="submit">Cadastrar funcionário</button>
-            </div>
-          </div>
-        </form>
-      </div>
+            </section>
 
-      <div class="side-column">
-        <aside class="preview-box" aria-label="Pré-visualização de dados">
-          <h2>Pré-visualização</h2>
-          <dl class="preview-list">
-            <div><dt>Nome</dt><dd id="preview-nome">-</dd></div>
-            <div><dt>Usuário</dt><dd id="preview-username">-</dd></div>
-            <div><dt>CPF</dt><dd id="preview-cpf">-</dd></div>
-            <div><dt>Perfil</dt><dd id="preview-cargo">-</dd></div>
-            <div><dt>Email</dt><dd id="preview-email">-</dd></div>
-            <div><dt>Telefone</dt><dd id="preview-telefone">-</dd></div>
-          </dl>
-        </aside>
+            <section class="card list-card">
+                <header class="list-header-compact">
+                    <h3>Cadastrados (<span id="total-funcionarios">0</span>)</h3>
+                </header>
 
-        <section class="employees-panel" aria-labelledby="employees-title">
-          <header class="employees-header">
-            <div>
-              <h2 id="employees-title">Funcionários cadastrados</h2>
-              <p class="employees-hint">Somente gerentes visualizam esta lista.</p>
-            </div>
-            <span id="employee-count" class="employees-count">0</span>
-          </header>
-          <div class="employees-controls">
-            <label class="sr-only" for="employee-search">Buscar funcionário</label>
-            <div class="search-wrapper">
-              <input type="search" id="employee-search" placeholder="Buscar por nome, usuário, email ou CPF">
-            </div>
-            <label class="sr-only" for="employee-filter">Filtrar por perfil</label>
-            <select id="employee-filter" t="Filtrar por perfil">
-              <option value="all" selected>Todos os perfis</option>
-              <option value="Administrador">Gerentes</option>
-              <option value="Funcionario">Funcionários</option>
-            </select>
-          </div>
-          <div id="employee-list" class="employee-list" aria-live="polite"></div>
-        </section>
-      </div>
-    </div>
-  </main>
+                <div class="filters-compact">
+                    <input type="text" id="search-input" placeholder="Buscar...">
+                    <select id="filter-cargo">
+                        <option value="todos">Todos</option>
+                        <option value="Administrador">Gerentes</option>
+                        <option value="Funcionario">Func.</option>
+                    </select>
+                </div>
 
-  <!-- Modal de Edição de Funcionário -->
-  <div id="edit-modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
-    <div class="modal">
-      <header aria-label="a" class="modal-header">
-        <h3 id="edit-modal-title">Editar funcionário</h3>
-      </header>
-      <form id="edit-employee-form">
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="input-group">
-              <label for="edit-nome">Nome completo</label>
-              <input type="text" id="edit-nome" required>
-            </div>
-            <div class="input-group">
-              <label for="edit-email">Email</label>
-              <input type="email" id="edit-email" required>
-            </div>
-            <div class="input-group">
-              <label for="edit-telefone">Telefone</label>
-              <input type="tel" id="edit-telefone" required>
-            </div>
-            <div class="input-group">
-              <label for="edit-cpf">CPF</label>
-              <input type="text" id="edit-cpf" required>
-            </div>
-            <div class="input-group">
-              <label for="edit-cargo">Perfil de acesso</label>
-              <select id="edit-cargo" required>
-                <option value="Administrador">Gerente</option>
-                <option value="Funcionario">Funcionário</option>
-              </select>
-            </div>
-            <div class="input-group">
-              <label for="edit-password">Nova senha (opcional)</label>
-              <input type="password" id="edit-password" autocomplete="new-password" placeholder="Deixe em branco para manter">
-              <small class="input-hint">Mínimo 6 caracteres, se definir.</small>
-            </div>
-          </div>
+                <div class="lista-container">
+                    <table id="tabela-funcionarios">
+                        <thead>
+                            <tr>
+                                <th>Nome / Cargo</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-controls">
+                    <button id="btn-prev-page" class="btn-page" disabled>
+                        <i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="page-info">Pág 1</span>
+                    <button id="btn-next-page" class="btn-page" disabled><i
+                            class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </section>
         </div>
-        <div class="modal-actions">
-          <button type="button" id="edit-cancel" class="btn secondary">Cancelar</button>
-          <button type="submit" id="edit-save" class="btn-primary">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
-  <script src="api-client.js"></script>
-  <script src="notifications.js"></script>
-  <script src="auth.js"></script>
-  <script src="cadastro-funcionarios.js"></script>
+    </main>
+
+    <script src="api-client.js"></script>
+    <script src="auth.js"></script>
+    <script src="cadastro-funcionarios.js"></script>
 </body>
+
 </html>

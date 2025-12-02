@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,30 +11,49 @@
   <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="login.css">
 </head>
+
 <body>
-  <main class="main-content login-hero"><section class="login-grid">
-    <div class="login-brand"><a href="#" class="brand-name">Styllo Fashion Modas</a>
-      <h2>Bem-vindo(a) de volta</h2><p>Entre com seu usuário e senha para acessar o sistema de gestão.</p>
-    </div><div id="login-box" class="form-box login-card"><header class="form-header">
-      <h1>Entrar no sistema</h1><p class="intro-p">Informe seu usuário e senha para acessar.</p>
-    </header><form id="login-form" novalidate><div class="input-group">
-      <label for="login-username">Usuário</label>
-      <input type="text" id="login-username" autocomplete="username" required>
-      <span class="input-feedback" id="feedback-login-username"></span>
-    </div><div class="input-group"><label for="login-password">Senha</label>
-      <div class="input-wrapper">
-        <input type="password" id="login-password" autocomplete="current-password" required>
-        <button type="button" class="eye-toggle closed" data-target="login-password" aria-label="Mostrar senha" title="Mostrar senha">
-          <svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
-          </svg><svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
-            <path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg></button></div><span class="input-feedback" id="feedback-login-password"></span></div>
-          <button class="btn-primary" type="submit">Entrar</button></form></div></section></main>
+  <main class="main-content login-hero">
+    <section class="login-grid">
+      <div class="login-brand"><a href="#" class="brand-name">Styllo Fashion Modas</a>
+        <h2>Bem-vindo(a) de volta</h2>
+        <p>Entre com seu usuário e senha para acessar o sistema de gestão.</p>
+      </div>
+      <div id="login-box" class="form-box login-card">
+        <header class="form-header">
+          <h1>Entrar no sistema</h1>
+          <p class="intro-p">Informe seu usuário e senha para acessar.</p>
+        </header>
+        <form id="login-form" novalidate>
+          <div class="input-group">
+            <label for="login-username">Usuário</label>
+            <input type="text" id="login-username" autocomplete="username" required>
+            <span class="input-feedback" id="feedback-login-username"></span>
+          </div>
+          <div class="input-group"><label for="login-password">Senha</label>
+            <div class="input-wrapper">
+              <input type="password" id="login-password" autocomplete="current-password" required>
+              <button type="button" class="eye-toggle closed" data-target="login-password" aria-label="Mostrar senha"
+                title="Mostrar senha">
+                <svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                </svg><svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                  <path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none" />
+                </svg></button>
+            </div><span class="input-feedback" id="feedback-login-password"></span>
+          </div>
+          <button class="btn-primary" type="submit">Entrar</button>
+        </form>
+      </div>
+    </section>
+  </main>
   <script src="api-client.js"></script>
   <script src="notifications.js"></script>
   <script src="script.js"></script>
 </body>
-</html>
 
+</html>

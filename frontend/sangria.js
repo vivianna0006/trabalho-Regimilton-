@@ -32,7 +32,7 @@
 
     submitBtn.disabled = isSubmitting;
     submitBtn.classList.toggle('is-loading', isSubmitting);
-    submitBtn.textContent = isSubmitting ? 'Registrando...' : 'Confirmar Retirada';
+    submitBtn.textContent = isSubmitting ? 'Registrando...' : 'Confirmar retirada';
   };
 
   if (valorInput) {

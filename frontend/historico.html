@@ -1,33 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Histórico de Caixa</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Historico de Caixa</title>
   <link rel="stylesheet" href="main.css">
   <link rel="stylesheet" href="menu.css">
   <link rel="stylesheet" href="componentes.css">
   <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="historico.css">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 </head>
+
 <body>
   <header>
     <nav></nav>
   </header>
 
-  <main class="main-content">
-    <div class="container">
-      <h1>Histórico de Caixa</h1>
+  <main class="main-content historico-content">
+    <section class="hist-hero">
+      <div>
+        <p class="eyebrow">Visao do caixa</p>
+        <h1>Historico do caixa</h1>
+        <p class="hero-lead">Acompanhe vendas, sangrias, suprimentos, devolucoes e fechamentos em um unico painel.</p>
+      </div>
+      <div class="hero-side">
+        <div class="mini-card">
+          <p class="label">Filtros rapidos</p>
+          <small>Combine datas, vendedor e ordenacao para encontrar registros sem esforco.</small>
+        </div>
+        <div class="mini-card">
+          <p class="label">Exportacao</p>
+          <small>Baixe CSV direto do painel ativo para compartilhar ou auditar.</small>
+        </div>
+      </div>
+    </section>
 
+    <div class="history-wrapper">
       <div class="tabs">
-        <button class="tab-button active" data-tab="vendas">Histórico de Vendas</button>
-        <button class="tab-button" data-tab="sangrias">Histórico de Sangrias</button>
-        <button class="tab-button" data-tab="suprimentos">Histórico de Suprimentos</button>
-        <button class="tab-button" data-tab="devolucoes">Histórico de Devoluções</button>
+        <button type="button" class="tab-button active" data-tab="vendas">Historico de Vendas</button>
+        <button type="button" class="tab-button" data-tab="sangrias">Historico de Sangrias</button>
+        <button type="button" class="tab-button" data-tab="suprimentos">Historico de Suprimentos</button>
+        <button type="button" class="tab-button" data-tab="devolucoes">Historico de Devolucoes</button>
+        <button type="button" class="tab-button" data-tab="fechamentos">Historico de Fechamentos</button>
       </div>
 
-      <section id="vendas" class="tab-content active">
+      <section id="vendas" class="tab-content active history-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Vendas</p>
+            <h2>Historico de vendas</h2>
+            <p class="section-subtitle">Use filtros para localizar uma venda especifica e exporte quando precisar.</p>
+          </div>
+        </div>
         <div class="filters">
           <select id="filtro-vendedor-vendas"></select>
           <input type="date" id="filtro-dia-vendas">
@@ -43,11 +69,18 @@
           <button id="limpar-filtros-vendas" type="button">Limpar</button>
           <button id="exportar-vendas-csv" type="button">Exportar CSV</button>
         </div>
-        <div id="resumo-vendas"></div>
+        <div id="resumo-vendas" class="history-summary-bar"></div>
         <div id="historico-vendas-lista" class="history-list"></div>
       </section>
 
-      <section id="sangrias" class="tab-content">
+      <section id="sangrias" class="tab-content history-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Sangrias</p>
+            <h2>Historico de sangrias</h2>
+            <p class="section-subtitle">Veja retiradas do caixa com filtros de periodo, usuario e ordenacao.</p>
+          </div>
+        </div>
         <div class="filters">
           <select id="filtro-vendedor-sangrias"></select>
           <input type="date" id="filtro-dia-sangrias">
@@ -61,11 +94,18 @@
           <button id="limpar-filtros-sangrias" type="button">Limpar</button>
           <button id="exportar-sangrias-csv" type="button">Exportar CSV</button>
         </div>
-        <div id="resumo-sangrias"></div>
+        <div id="resumo-sangrias" class="history-summary-bar"></div>
         <div id="historico-sangrias-lista" class="history-list"></div>
       </section>
 
-      <section id="suprimentos" class="tab-content">
+      <section id="suprimentos" class="tab-content history-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Suprimentos</p>
+            <h2>Historico de suprimentos</h2>
+            <p class="section-subtitle">Monitore entradas no caixa e mantenha o registro claro para auditoria.</p>
+          </div>
+        </div>
         <div class="filters">
           <select id="filtro-vendedor-suprimentos"></select>
           <input type="date" id="filtro-dia-suprimentos">
@@ -79,11 +119,18 @@
           <button id="limpar-filtros-suprimentos" type="button">Limpar</button>
           <button id="exportar-suprimentos-csv" type="button">Exportar CSV</button>
         </div>
-        <div id="resumo-suprimentos"></div>
+        <div id="resumo-suprimentos" class="history-summary-bar"></div>
         <div id="historico-suprimentos-lista" class="history-list"></div>
       </section>
 
-      <section id="devolucoes" class="tab-content">
+      <section id="devolucoes" class="tab-content history-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Devolucoes</p>
+            <h2>Historico de devolucoes</h2>
+            <p class="section-subtitle">Controle itens devolvidos e processe ajustes com clareza.</p>
+          </div>
+        </div>
         <div class="filters">
           <select id="filtro-vendedor-devolucoes"></select>
           <input type="date" id="filtro-dia-devolucoes">
@@ -99,8 +146,27 @@
           <button id="limpar-filtros-devolucoes" type="button">Limpar</button>
           <button id="exportar-devolucoes-csv" type="button">Exportar CSV</button>
         </div>
-        <div id="resumo-devolucoes"></div>
+        <div id="resumo-devolucoes" class="history-summary-bar"></div>
         <div id="historico-devolucoes-lista" class="history-list"></div>
+      </section>
+
+      <section id="fechamentos" class="tab-content history-card">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Fechamentos</p>
+            <h2>Historico de fechamentos</h2>
+            <p class="section-subtitle">Veja o consolidado de turnos e garanta conciliacao rapida.</p>
+          </div>
+        </div>
+        <div class="filters">
+          <input type="date" id="filtro-dia-fechamento">
+          <input type="date" id="filtro-dia-ate-fechamento">
+          <input type="text" id="filtro-usuario-fechamento" placeholder="Buscar por usuario...">
+          <button id="limpar-filtros-fechamentos" type="button">Limpar</button>
+          <button id="exportar-fechamentos-csv" type="button">Exportar CSV</button>
+        </div>
+        <div id="resumo-fechamentos" class="history-summary-bar"></div>
+        <div id="historico-fechamentos-lista" class="history-list"></div>
       </section>
     </div>
   </main>
@@ -110,25 +176,25 @@
   <script src="auth.js"></script>
   <script src="historico.js"></script>
 
-  <!-- Modal Devolução -->
-  <div id="modal-devolucao" class="modal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);">
-    <div class="modal-content" style="background:#fff;max-width:600px;width:95%;border-radius:10px;padding:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <h2 style="margin:0;">Processar Devolução</h2>
-        <button type="button" id="fechar-modal-devolucao" style="background:none;border:none;font-size:20px;cursor:pointer;">×</button>
+  <div id="modal-devolucao" class="modal">
+    <div class="modal-content">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Devolucao</p>
+          <h2>Processar devolucao</h2>
+        </div>
+        <button type="button" id="fechar-modal-devolucao" class="modal-close" aria-label="Fechar modal">x</button>
       </div>
-      <div style="margin-top:8px;">
-        <p>Venda ID: <strong id="dev-sale-id">-</strong></p>
-        <div id="dev-items" style="max-height:220px;overflow:auto;border:1px solid #eee;border-radius:6px;padding:8px;"></div>
-        <label for="dev-motivo" style="display:block;margin-top:8px;">Motivo</label>
-        <textarea id="dev-motivo" rows="3" style="width:100%;"></textarea>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
-        <button type="button" id="cancelar-devolucao">Cancelar</button>
-        <button type="button" id="confirmar-devolucao" style="background:#2563eb;color:#fff;border:none;padding:8px 14px;border-radius:6px;">Confirmar</button>
+      <p class="modal-subtitle">Venda ID: <strong id="dev-sale-id">-</strong></p>
+      <div id="dev-items" class="modal-items"></div>
+      <label for="dev-motivo" class="modal-label">Motivo</label>
+      <textarea id="dev-motivo" rows="3" class="modal-textarea" placeholder="Descreva o motivo da devolucao"></textarea>
+      <div class="modal-actions">
+        <button type="button" id="cancelar-devolucao" class="btn-secondary">Cancelar</button>
+        <button type="button" id="confirmar-devolucao" class="btn-primary">Confirmar</button>
       </div>
     </div>
   </div>
 </body>
-</html>
 
+</html>

@@ -1,45 +1,90 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suprimento de Caixa - Styllo Fashion Modas</title>
+  <title>Suprimento de Caixa | Styllo Fashion</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="componentes.css">
+  <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="suprimentos.css">
-  <script src="frontend/auth.js"></script>
 </head>
 
 <body>
-    
-  <nav></nav>
+  <header>
+    <nav></nav>
+  </header>
 
-  <main class="container">
-    <h1>💵 Suprimento de Caixa</h1>
-    <p>Registre novos suprimentos e visualize o histórico de entradas no caixa.</p>
+  <main class="main-content suprimento-content">
+    <section class="sup-grid">
+      <div class="sup-card sup-form-card">
+        <p class="sup-kicker">Entrada no caixa</p>
+        <h1>Registrar suprimento</h1>
+        <p class="sup-lead">Use esta tela para colocar dinheiro no caixa e manter o fechamento alinhado.</p>
 
-    <form id="formSuprimento">
-      <label>Descrição:</label>
-      <input type="text" id="descricao" required>
+        <form id="sup-form" class="sup-form">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="sup-valor">Valor a colocar (R$)</label>
+              <input type="text" id="sup-valor" placeholder="0,00" autocomplete="off" required>
+              <span class="input-hint">Valor registrado em reais; apenas numeros.</span>
+            </div>
+            <div class="input-group">
+              <label for="sup-data">Data e hora</label>
+              <input type="datetime-local" id="sup-data">
+              <span class="input-hint">Opcional. Usamos o horario atual se ficar vazio.</span>
+            </div>
+          </div>
 
-      <label>Valor (R$):</label>
-      <input type="number" id="valor" required step="0.01">
+          <div class="input-group">
+            <label for="sup-descricao">Observacao</label>
+            <input type="text" id="sup-descricao" placeholder="Ex: Troco inicial ou reposicao" maxlength="120" required>
+            <span class="input-hint">Descreva por que o dinheiro entrou no caixa.</span>
+          </div>
 
-      <button type="submit">Registrar Suprimento</button>
-    </form>
+          <div class="sup-actions">
+            <button type="submit" class="sup-submit-btn">Registrar entrada</button>
+            <button type="reset" class="sup-reset-btn">Limpar</button>
+          </div>
+        </form>
+      </div>
 
-    <h2>Histórico de Suprimentos</h2>
-    <table id="tabelaSuprimentos">
-      <thead>
-        <tr>
-          <th>Descrição</th>
-          <th>Valor</th>
-          <th>Data</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+      <div class="sup-card sup-stats-card">
+        <div class="sup-stats-header">
+          <div>
+            <p class="sup-kicker">Resumo rapido</p>
+            <h2>Impacto no caixa</h2>
+          </div>
+          <button id="sup-recarregar" type="button" class="pill pill-soft">Atualizar</button>
+        </div>
+        <div class="sup-stats-grid">
+          <div class="stat-card">
+            <span class="label">Total geral</span>
+            <strong id="sup-total-geral">R$ 0,00</strong>
+            <small>Somatorio de todas as entradas</small>
+          </div>
+          <div class="stat-card">
+            <span class="label">Ultimo registro</span>
+            <strong id="sup-ultimo-valor">R$ 0,00</strong>
+            <small id="sup-ultimo-info">Ainda nao ha registros</small>
+          </div>
+        </div>
+        <div class="sup-cta">
+          <div>
+            <p class="sup-lead">Quer ver todas as entradas com filtros? Use o historico completo.</p>
+          </div>
+          <a class="sup-cta-btn" id="sup-ir-historico" href="historico.html?tab=suprimentos">Abrir historico de caixa</a>
+        </div>
+      </div>
+    </section>
   </main>
 
+  <script src="api-client.js"></script>
+  <script src="notifications.js"></script>
+  <script src="auth.js"></script>
   <script src="suprimentos.js"></script>
 </body>
-</html>
 
+</html>

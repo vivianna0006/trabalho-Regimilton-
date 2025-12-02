@@ -1,54 +1,328 @@
 [
   {
-    "id": 1761783077935,
-    "date": "2025-10-30T00:11:17.935Z",
+    "id": 1764681138436,
+    "date": "2025-12-02T13:12:18.436Z",
     "items": [
       {
         "id": "001",
         "nome": "Blusa cinza",
-        "descricao": "Blusa cinza",
-        "valor": 20,
+        "descricao": "magras magras magras",
+        "valor": 70,
         "categoriaNome": "Blusas",
-        "subcategoriaNome": "Masculina",
+        "subcategoriaNome": "Feminina",
         "tamanhos": {
-          "PP": 0,
+          "PP": 60,
           "P": 0,
-          "M": 7,
-          "G": 0,
-          "GG": 0
-        }
-      },
-      {
-        "id": "002",
-        "nome": "blusa marrom",
-        "descricao": "marrom",
-        "valor": 2000,
-        "categoriaNome": "Acessórios",
-        "subcategoriaNome": "Feminino",
-        "tamanhos": {
-          "PP": 0,
-          "P": 1,
           "M": 0,
           "G": 0,
           "GG": 0
         }
-      },
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764681149025,
+    "date": "2025-12-02T13:12:29.025Z",
+    "items": [
       {
-        "id": "05",
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
         "categoriaNome": "Blusas",
         "subcategoriaNome": "Feminina",
-        "nome": "blusa listrada",
-        "descricao": "blusa kwaii do sol listrada",
-        "valor": 50,
         "tamanhos": {
-          "PP": 55,
-          "P": 20,
-          "M": 10,
-          "G": 20,
-          "GG": 30
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
         }
       }
     ],
     "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764681159717,
+    "date": "2025-12-02T13:12:39.717Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764686012349,
+    "date": "2025-12-02T14:33:32.349Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764686240788,
+    "date": "2025-12-02T14:37:20.788Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764686319844,
+    "date": "2025-12-02T14:38:39.844Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764686387631,
+    "date": "2025-12-02T14:39:47.631Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764687137391,
+    "date": "2025-12-02T14:52:17.391Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9"
+  },
+  {
+    "id": 1764687203671,
+    "date": "2025-12-02T14:53:23.671Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "cartao_credito",
+    "receivedAmount": 70,
+    "changeGiven": 0
+  },
+  {
+    "id": 1764687226681,
+    "date": "2025-12-02T14:53:46.681Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "cartao_debito",
+    "receivedAmount": 70,
+    "changeGiven": 0
+  },
+  {
+    "id": 1764687242857,
+    "date": "2025-12-02T14:54:02.857Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "pix",
+    "receivedAmount": 70,
+    "changeGiven": 0
+  },
+  {
+    "id": 1764687256376,
+    "date": "2025-12-02T14:54:16.376Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "dinheiro",
+    "receivedAmount": 70,
+    "changeGiven": 0
+  },
+  {
+    "id": 1764687283509,
+    "date": "2025-12-02T14:54:43.509Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "dinheiro",
+    "receivedAmount": 100,
+    "changeGiven": 30
+  },
+  {
+    "id": 1764687303776,
+    "date": "2025-12-02T14:55:03.776Z",
+    "items": [
+      {
+        "id": "001",
+        "nome": "Blusa cinza",
+        "descricao": "magras magras magras",
+        "valor": 70,
+        "categoriaNome": "Blusas",
+        "subcategoriaNome": "Feminina",
+        "tamanhos": {
+          "PP": 60,
+          "P": 0,
+          "M": 0,
+          "G": 0,
+          "GG": 0
+        }
+      }
+    ],
+    "seller": "anninhatwice9",
+    "paymentMethod": "dinheiro",
+    "receivedAmount": 200,
+    "changeGiven": 130
   }
 ]

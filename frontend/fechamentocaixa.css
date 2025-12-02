@@ -1,302 +1,380 @@
-/*
- * CSS ATUALIZADO E MELHORADO PARA UM VISUAL MODERNO
- * Foco em Soft UI, melhor tipografia e responsividade.
- */
+﻿:root {
+  --fc-bg: #f5f6fb;
+  --fc-surface: #ffffff;
+  --fc-border: #e7ebf3;
+  --fc-primary: #2563eb;
+  --fc-primary-strong: #1d4ed8;
+  --fc-text: #1f2937;
+  --fc-muted: #6b7280;
+  --fc-success: #22c55e;
+  --fc-danger: #ef4444;
+  --fc-radius: 12px;
+  --fc-radius-sm: 10px;
+  --fc-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+}
 
-/* 1. Base Global e Tipografia */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fonte moderna e limpa */
-    background-color: #f4f7f9; /* Fundo suave */
-    color: #333;
-    line-height: 1.6;
+  background: var(--fc-bg);
+  color: var(--fc-text);
 }
 
-/* Layout básico para a página de fechamento */
-.container {
-    max-width: 900px; /* Um pouco mais largo pode ser bom */
-    margin: 30px auto; /* Adiciona margem vertical */
-    padding: 0 15px; /* Padding nas laterais para telas pequenas */
+.fechamento-content {
+  position: relative;
 }
 
-/* 2. Cabeçalho (Título e Botão Histórico) */
+.fc-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fc-top-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
 .header-fechamento {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px; /* Mais espaço */
-    padding-bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .header-fechamento h1 {
-    margin: 0;
-    font-size: 2em;
-    color: #212529; /* Cor escura e forte para título */
-    font-weight: 600;
+  margin: 4px 0 6px;
+  font-size: 2rem;
 }
 
-/* 3. Estilo para o botão/link de histórico (âncora) */
+.fc-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: var(--fc-muted);
+}
+
+.fc-subtitle {
+  margin: 0;
+  color: var(--fc-muted);
+}
+
 .btn-historico-link {
-    padding: 10px 18px;
-    background-color: #6c757d; /* Cinza suave como secundário */
-    color: white;
-    text-decoration: none;
-    border-radius: 6px; /* Mais arredondamento */
-    font-size: 0.95em;
-    font-weight: 500;
-    transition: background-color 0.3s, transform 0.1s;
-    white-space: nowrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+  padding: 10px 14px;
+  background: #ffffff;
+  color: var(--fc-primary-strong);
+  text-decoration: none;
+  border-radius: var(--fc-radius-sm);
+  font-weight: 700;
+  border: 1px solid var(--fc-border);
 }
 
-.btn-historico-link:hover {
-    background-color: #5a6268;
-    transform: translateY(-1px); /* Efeito sutil ao passar o mouse */
-}
-
-/* 4. Estilo dos Cards (Componentes) */
 .componente-card {
-    background-color: #ffffff;
-    padding: 25px; /* Mais padding */
-    border-radius: 12px; /* Mais arredondamento */
-    /* Sombra moderna e suave */
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08); 
-    margin-bottom: 25px;
-    border: 1px solid #eef1f4; /* Borda suave */
+  background: var(--fc-surface);
+  border-radius: var(--fc-radius);
+  padding: 14px 16px;
+  box-shadow: var(--fc-shadow);
+  border: 1px solid var(--fc-border);
 }
 
-.componente-card h2 {
-    color: #007bff; /* Azul primário */
-    border-bottom: 2px solid #e9ecef; /* Borda mais grossa e clara */
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-    font-size: 1.5em;
-    font-weight: 600;
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 10px;
 }
 
-/* 5. Estilos de Resumo e Resultado */
-.grid-resumo p, .grid-resultado p {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0; /* Mais padding */
-    border-bottom: 1px dashed #e9ecef; /* Linha tracejada mais clara */
-    font-size: 1.05em;
-    font-weight: 500;
-}
-.grid-resumo p span:last-child, .grid-resultado p span:last-child {
-    font-weight: bold;
-    color: #495057; /* Valor em destaque */
+.filters__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
 
-/* 6. Grid de Conferência (Inputs) */
+.filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filters__hint {
+  color: var(--fc-muted);
+  margin: 10px 0 0;
+}
+
+.cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.resumo-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.resumo-lista div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius-sm);
+  background: #fafbff;
+}
+
+.resumo-lista dt {
+  margin: 0;
+  color: var(--fc-muted);
+}
+
+.resumo-lista dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.linha-destaque {
+  background: #eef2ff;
+  border-color: rgba(37, 99, 235, 0.2);
+  font-weight: 800;
+}
+
 .grid-conferencia {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px; /* Aumenta o espaçamento entre os campos */
-    margin-top: 20px;
-    justify-content: flex-start; /* Alinha ao início do container */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
 }
 
-.grid-conferencia > * {
-    display: flex;
+.fc-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fc-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius-sm);
+  padding: 0 12px;
+  background: #fff;
+}
+
+.fc-prefix {
+  color: var(--fc-muted);
+  font-weight: 600;
+}
+
+.money-input {
+  border: none;
+  flex: 1;
+  padding: 12px 8px;
+  font-size: 1rem;
+  outline: none;
+  background: transparent;
+}
+
+.input-hint {
+  color: var(--fc-muted);
+  font-size: 0.9rem;
+}
+
+.pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  color: var(--fc-primary-strong);
+  font-weight: 700;
+}
+
+.grid-resultado {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.resultado-final button {
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--fc-primary);
+  background: linear-gradient(135deg, var(--fc-primary), var(--fc-primary-strong));
+  color: #fff;
+  border-radius: var(--fc-radius-sm);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+}
+
+.fc-footer-hint {
+  color: var(--fc-muted);
+  margin-top: 8px;
+}
+
+.total-caixa,
+.total-geral,
+.total-lucro,
+.total-diferenca,
+.total-status {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.neutro-tag { color: #111827; }
+.quebra-tag { color: var(--fc-danger); }
+.sobra-tag { color: var(--fc-success); }
+
+.pill-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: var(--fc-radius-sm);
+  background: #f3f4f6;
+  font-weight: 700;
+  border: 1px solid var(--fc-border);
+}
+
+.pill-status.neutro-tag { background: #eef2ff; color: var(--fc-primary-strong); border-color: rgba(37, 99, 235, 0.25); }
+.pill-status.quebra-tag { background: #fef2f2; color: var(--fc-danger); border-color: rgba(239, 68, 68, 0.25); }
+.pill-status.sobra-tag { background: #ecfdf3; color: var(--fc-success); border-color: rgba(34, 197, 94, 0.25); }
+
+.btn-primary {
+  border: 1px solid var(--fc-primary);
+  background: linear-gradient(135deg, var(--fc-primary), var(--fc-primary-strong));
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--fc-radius-sm);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
+}
+
+.fc-lucro-card {
+  border: 1px solid var(--fc-border);
+  box-shadow: var(--fc-shadow);
+  width: 100%;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.06), #ffffff);
+  padding: 16px 18px;
+  border-radius: var(--fc-radius);
+}
+
+.fc-lucro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--fc-border);
+  padding-bottom: 10px;
+}
+
+.fc-lucro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: var(--fc-primary-strong);
+  font-weight: 700;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.fc-lucro-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fc-lucro-date {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--fc-border);
+  color: var(--fc-muted);
+  font-weight: 700;
+  background: #fff;
+}
+
+.fc-lucro-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fc-top-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 0 2px;
+}
+.fc-top-controls .filters__field { margin: 0; }
+
+.fc-top-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.fc-top-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fc-lucro-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius-sm);
+  background: #fafbff;
+}
+
+.fc-lucro-row.destaque {
+  border-width: 2px;
+  background: #f3f6ff;
+}
+
+.fc-lucro-row strong {
+  font-size: 1.1rem;
+}
+
+.fc-lucro-chip {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: var(--fc-primary-strong);
+  font-weight: 700;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+@media (max-width: 720px) {
+  .fc-top-panel {
+    gap: 10px;
+  }
+  .fc-top-row {
+    grid-template-columns: 1fr;
+  }
+  .fc-top-controls {
     flex-direction: column;
     align-items: flex-start;
-    min-width: 220px; /* Garante que os campos não fiquem muito pequenos */
-}
-
-.grid-conferencia label {
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #495057;
-    font-size: 0.95em;
-}
-
-.grid-conferencia input {
-    padding: 10px 12px;
-    border: 1px solid #ced4da; /* Borda mais definida */
-    border-radius: 8px; /* Mais arredondamento */
-    text-align: right;
-    font-size: 1.3em;
-    width: 100%; /* Ocupa a largura máxima do item */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra interna sutil */
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.grid-conferencia input:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Foco azul suave */
-    outline: none;
-}
-
-
-/* 7. Estilos para a Linha de Total */
-.total-caixa, .total-geral, .total-diferenca, .total-status {
-    font-size: 1.3em !important;
-    font-weight: 700;
-    border-top: 2px solid #007bff; /* Linha do total com a cor primária */
-    margin-top: 15px;
-    padding-top: 15px !important;
-}
-
-/* 8. Estilos de Cores para o Resultado */
-
-/* Quebra (Faltou) - Problema sério */
-.quebra { 
-    color: #dc3545; /* Vermelho forte */
-}
-
-/* Sobra (Excedente) - Atenção/Aviso */
-.sobra { 
-    color: #ffc107; /* Amarelo/Laranja forte */
-}
-
-/* Bateu - OK */
-.neutro { 
-    color: #28a745; /* Verde (para o valor em si) */
-}
-
-
-/* 9. Estilos de TAGS de Status */
-.neutro-tag, .quebra-tag, .sobra-tag {
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.9em;
-    text-transform: uppercase;
-}
-
-/* Bateu (OK) */
-.neutro-tag {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-/* Quebra (Faltou) */
-.quebra-tag {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* Sobra (Excedente) */
-.sobra-tag {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-/* 10. Botão Principal de Finalização */
-#finalizar-fechamento {
+  }
+  .header-fechamento {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .btn-historico-link {
     width: 100%;
-    padding: 18px; /* Maior padding */
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 20px; /* Fonte maior */
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 30px; /* Mais margem superior */
-    transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
-    box-shadow: 0 4px 6px rgba(0, 123, 255, 0.3); /* Sombra mais destacada */
-}
-
-#finalizar-fechamento:hover:not(:disabled) {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(0, 123, 255, 0.4);
-}
-
-#finalizar-fechamento:disabled {
-    background-color: #e9ecef;
-    color: #adb5bd;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-
-/* --- ESTILOS PARA HISTÓRICO --- */
-
-.historico-fechamentos h2 {
-    /* Mantém o estilo de H2 */
-    color: #007bff;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-.table-container {
-    overflow-x: auto;
-    /* Adiciona uma borda suave ao redor da tabela */
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    background-color: #ffffff;
-}
-
-#tabela-historico {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#tabela-historico th, #tabela-historico td {
-    padding: 15px 12px; /* Mais padding */
-    text-align: left;
-    border-bottom: 1px solid #f1f3f5; /* Borda mais clara */
-    font-size: 0.95em;
-}
-
-#tabela-historico th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-    color: #495057;
-    text-transform: uppercase;
-    border-bottom: 2px solid #e9ecef; /* Linha mais grossa para o cabeçalho */
-}
-
-#tabela-historico tr:hover {
-    background-color: #eef1f4; /* Fundo mais suave ao passar o mouse */
-}
-
-/* Aplicando cores diretamente na coluna da Diferença Geral (que usa as classes .quebra, .sobra, .neutro) */
-#tabela-historico td.quebra {
-    color: #dc3545;
-    font-weight: 600;
-}
-
-#tabela-historico td.sobra {
-    color: #ffc107;
-    font-weight: 600;
-}
-
-#tabela-historico td.neutro {
-    color: #28a745;
-}
-
-
-.btn-detalhes {
-    padding: 8px 15px; /* Mais padding */
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85em;
-    transition: background-color 0.3s;
-}
-
-.btn-detalhes:hover {
-    background-color: #5a6268;
-}
-
-/* Media Query para responsividade nos inputs */
-@media (max-width: 600px) {
-    .grid-conferencia {
-        gap: 15px; /* Reduz o gap */
-        justify-content: center; /* Centraliza os campos */
-    }
-    .grid-conferencia > * {
-        min-width: 100%; /* Faz com que cada input ocupe a linha toda */
-        align-items: stretch; /* Estica o input */
-    }
-    .grid-conferencia input {
-        width: 100%;
-        max-width: none;
-    }
+    text-align: center;
+  }
 }
