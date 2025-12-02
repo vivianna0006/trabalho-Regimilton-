@@ -1,4 +1,4 @@
-﻿// Clean Server for Styllo Fashion (UTF-8)
+// Clean Server for Styllo Fashion (UTF-8)
 const express = require('express');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
@@ -39,7 +39,7 @@ const isStrongPassword = (pwd) => {
   return /^[A-Za-z0-9]+$/.test(str);
 };
 
-// (helpers removidos por solicita��o de revers�o)
+// (helpers removidos por solicita??o de revers?o)
 
 const canonicalCargo = (value) => {
   const n = lowercaseText(value);
@@ -76,7 +76,7 @@ const isValidCPF = (value) => {
   return d1 === Number(s[9]) && d2 === Number(s[10]);
 };
 
-// Sessions + helpers reutiliz�veis
+// Sessions + helpers reutiliz?veis
 const getSession = (req) => {
   const bearer = (req.header('authorization') || '').replace(/^Bearer\s+/i, '');
   const token = req.header('x-auth-token') || bearer;
@@ -180,9 +180,9 @@ const mergeSuprimentos = (transactionsOverride) => {
 };
 const registrarSuprimento = ({ amount, user, description, date }) => {
   const valor = Math.abs(safeNumber(amount));
-  if (!valor) throw new Error('O valor do suprimento � inv�lido.');
+  if (!valor) throw new Error('O valor do suprimento ? inv?lido.');
   const usuario = normalizeText(user || '');
-  if (!usuario) throw new Error('Usu�rio do suprimento n�o informado.');
+  if (!usuario) throw new Error('Usu?rio do suprimento n?o informado.');
   const parsedDate = date ? new Date(date) : new Date();
   const agora = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
   const entrada = {
@@ -315,7 +315,7 @@ app.get('/api/status', (req, res) => {
   }
 });
 
-// Helpers: devolu��es file
+// Helpers: devolu??es file
 const readDevolucoes = () => {
   try { return JSON.parse(fs.readFileSync(DEVOLUCOES_DB_FILE, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return []; throw e; }
 };
@@ -328,7 +328,7 @@ app.get('/api/users/usernames', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
 
     const users = readData(USERS_DB_PATH) || [];
     const usernames = users
@@ -337,7 +337,7 @@ app.get('/api/users/usernames', (req, res) => {
       .sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
     res.status(200).json(usernames);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao listar usu�rios.' });
+    res.status(500).json({ message: 'Erro ao listar usu?rios.' });
   }
 });
 
@@ -422,7 +422,7 @@ app.get('/api/history/sales-all', (req, res) => {
 
     res.status(200).json(sorted);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao ler hist�rico de vendas.' });
+    res.status(500).json({ message: 'Erro ao ler hist?rico de vendas.' });
   }
 });
 
@@ -539,15 +539,15 @@ app.post('/api/login', async (req, res) => {
     if (!user && inputDigits.length === 11) {
       user = users.find(u => u && u.cpf && digitsOnly(u.cpf) === inputDigits);
     }
-    if (!user) return res.status(401).json({ success: false, message: 'Usu�rio ou senha inv�lidos.' });
+    if (!user) return res.status(401).json({ success: false, message: 'Usu?rio ou senha inv?lidos.' });
 
     if (canonicalCargo(user.cargo) === 'Funcionario') {
       if (inputDigits.length !== 11 || digitsOnly(user.cpf || '') !== inputDigits)
-        return res.status(401).json({ success: false, message: 'Para funcion�rio, utilize o CPF como usu�rio.' });
+        return res.status(401).json({ success: false, message: 'Para funcion?rio, utilize o CPF como usu?rio.' });
     }
 
     if (!inputPassword || !(await bcrypt.compare(inputPassword, user.password)))
-      return res.status(401).json({ success: false, message: 'Usu�rio ou senha inv�lidos.' });
+      return res.status(401).json({ success: false, message: 'Usu?rio ou senha inv?lidos.' });
 
     for (const [tokenValue, sess] of activeSessions.entries()) {
       if (sess.username === user.username) activeSessions.delete(tokenValue);
@@ -561,7 +561,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Rota para buscar o hist�rico de vendas com filtros
+// Rota para buscar o hist?rico de vendas com filtros
 app.get('/api/history/sales', async (req, res) => {
   try {
     let sales = await readSales();
@@ -581,11 +581,11 @@ app.get('/api/history/sales', async (req, res) => {
     }
     res.json(sales.reverse()); // Retorna as mais recentes primeiro
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar hist�rico de vendas." });
+    res.status(500).json({ message: "Erro ao buscar hist?rico de vendas." });
   }
 });
 
-// Rota para buscar o hist�rico de sangrias com filtros
+// Rota para buscar o hist?rico de sangrias com filtros
 app.get('/api/history/sangrias', async (req, res) => {
   try {
     let transactions = await readTransactions();
@@ -599,11 +599,11 @@ app.get('/api/history/sangrias', async (req, res) => {
     }
     res.json(transactions.reverse());
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar hist�rico de sangrias." });
+    res.status(500).json({ message: "Erro ao buscar hist?rico de sangrias." });
   }
 });
 
-// Rota para buscar o hist�rico de devolu��es com filtros
+// Rota para buscar o hist?rico de devolu??es com filtros
 app.get('/api/history/devolucoes', (req, res) => {
   try {
     const raw = readDevolucoes() || [];
@@ -618,7 +618,7 @@ app.get('/api/history/devolucoes', (req, res) => {
         amount: Number(r.amount || 0) || 0,
         items: []
       };
-      // Suporte a formatos: items[], produto �nico, products
+      // Suporte a formatos: items[], produto ?nico, products
       if (Array.isArray(r.items)) {
         base.items = r.items.map(it => ({
           productId: it.productId ?? it.id ?? it.codigo ?? null,
@@ -681,7 +681,7 @@ app.get('/api/history/devolucoes', (req, res) => {
 
     res.status(200).json(filtered);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao buscar hist�rico de devolu��es.' });
+    res.status(500).json({ message: 'Erro ao buscar hist?rico de devolu??es.' });
   }
 });
 
@@ -697,7 +697,7 @@ app.delete('/api/history/sales/:id', async (req, res) => {
     sales = sales.filter(sale => sale.id !== saleId);
 
     if (sales.length === initialLength) {
-      return res.status(404).json({ message: "Venda n�o encontrada." });
+      return res.status(404).json({ message: "Venda n?o encontrada." });
     }
 
     await writeSales(sales);
@@ -707,12 +707,12 @@ app.delete('/api/history/sales/:id', async (req, res) => {
   }
 });
 
-// Rota para processar uma devolu��o
+// Rota para processar uma devolu??o
 app.post('/api/devolucao', async (req, res) => {
   try {
     const { saleId, produto, motivo, vendedor } = req.body;
 
-    // 1. Registar a devolu��o
+    // 1. Registar a devolu??o
     const devolucoes = await readDevolucoes();
     const novaDevolucao = {
       id: new Date().getTime(),
@@ -739,9 +739,9 @@ app.post('/api/devolucao', async (req, res) => {
     // 3. Atualizar o estoque (opcional, mas recomendado)
     // Esta parte pode ser adicionada depois para aumentar a quantidade em estoque
 
-    res.status(201).json({ success: true, message: 'Devolu��o registada com sucesso!' });
+    res.status(201).json({ success: true, message: 'Devolu??o registada com sucesso!' });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao processar devolu��o.' });
+    res.status(500).json({ message: 'Erro ao processar devolu??o.' });
   }
 });
 
@@ -750,7 +750,7 @@ app.get('/api/users', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar funcionarios.' });
 
     const { search = '', cargo } = req.query || {};
@@ -786,15 +786,15 @@ app.get('/api/users', (req, res) => {
       try {
         const authToken = req.header('x-auth-token');
         const session = authToken ? activeSessions.get(authToken) : null;
-        if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcion�rios.' });
+        if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcion?rios.' });
 
         const targetUsername = String(req.params.username || '').trim();
-        if (!targetUsername) return res.status(400).json({ message: 'Usu�rio alvo inv�lido.' });
+        if (!targetUsername) return res.status(400).json({ message: 'Usu?rio alvo inv?lido.' });
 
         const users = readData(USERS_DB_PATH);
         const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-        if (idx === -1) return res.status(404).json({ message: 'Funcion�rio n�o encontrado.' });
+        if (idx === -1) return res.status(404).json({ message: 'Funcion?rio n?o encontrado.' });
 
         const body = req.body || {};
         const updates = {};
@@ -804,14 +804,14 @@ app.get('/api/users', (req, res) => {
         if (typeof body.cpf === 'string') updates.cpf = digitsOnly(body.cpf);
         if (typeof body.cargo === 'string') updates.cargo = canonicalCargo(body.cargo) || users[idx].cargo;
 
-        if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inv�lido.' });
-        if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inv�lido.' });
+        if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inv?lido.' });
+        if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inv?lido.' });
         if (updates.cpf && updates.cpf.length && updates.cpf !== (digitsOnly(users[idx].cpf || ''))) {
-          if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inv�lido.' });
-          if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'J� existe um funcion�rio com este CPF.' });
+          if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inv?lido.' });
+          if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'J? existe um funcion?rio com este CPF.' });
         }
         if (updates.email && updates.email !== lowercaseText(users[idx].email || '')) {
-          if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'J� existe um funcion�rio com este email.' });
+          if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'J? existe um funcion?rio com este email.' });
         }
 
         if (typeof body.password === 'string' && body.password.trim()) {
@@ -826,11 +826,11 @@ app.get('/api/users', (req, res) => {
 
         const u = users[idx];
         return res.status(200).json({
-          message: 'Funcion�rio atualizado com sucesso!',
+          message: 'Funcion?rio atualizado com sucesso!',
           user: { username: u.username, cargo: u.cargo, nomeCompleto: u.nomeCompleto, cpf: u.cpf, email: u.email, telefone: u.telefone, updatedAt: u.updatedAt }
         });
       } catch (e) {
-        res.status(500).json({ message: 'Erro ao atualizar funcion�rio.' });
+        res.status(500).json({ message: 'Erro ao atualizar funcion?rio.' });
       }
     });
 
@@ -839,34 +839,34 @@ app.get('/api/users', (req, res) => {
       try {
         const authToken = req.header('x-auth-token');
         const session = authToken ? activeSessions.get(authToken) : null;
-        if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcion�rios.' });
+        if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcion?rios.' });
 
         const targetUsername = String(req.params.username || '').trim();
-        if (!targetUsername) return res.status(400).json({ message: 'Usu�rio alvo inv�lido.' });
+        if (!targetUsername) return res.status(400).json({ message: 'Usu?rio alvo inv?lido.' });
 
         const users = readData(USERS_DB_PATH);
         const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-        if (idx === -1) return res.status(404).json({ message: 'Funcion�rio n�o encontrado.' });
+        if (idx === -1) return res.status(404).json({ message: 'Funcion?rio n?o encontrado.' });
 
-        // Evitar excluir o �ltimo administrador
+        // Evitar excluir o ?ltimo administrador
         const isAdmin = canonicalCargo(users[idx].cargo) === 'Administrador';
         if (isAdmin) {
           const adminCount = users.filter(u => canonicalCargo(u.cargo) === 'Administrador').length;
-          if (adminCount <= 1) return res.status(400).json({ message: 'N�o � poss�vel excluir o �ltimo administrador.' });
+          if (adminCount <= 1) return res.status(400).json({ message: 'N?o ? poss?vel excluir o ?ltimo administrador.' });
         }
 
         const removed = users.splice(idx, 1)[0];
         writeData(USERS_DB_PATH, users);
-        // Encerrar sess�es do usu�rio removido
+        // Encerrar sess?es do usu?rio removido
         for (const [tokenValue, sess] of activeSessions.entries()) {
           if (sess.username && String(sess.username).toLowerCase() === String(removed.username).toLowerCase()) {
             activeSessions.delete(tokenValue);
           }
         }
-        return res.status(200).json({ success: true, message: 'Funcion�rio exclu�do com sucesso.' });
+        return res.status(200).json({ success: true, message: 'Funcion?rio exclu?do com sucesso.' });
       } catch (e) {
-        res.status(500).json({ message: 'Erro ao excluir funcion�rio.' });
+        res.status(500).json({ message: 'Erro ao excluir funcion?rio.' });
       }
     });
     res.status(200).json({ total: entries.length, results: filtered });
@@ -904,7 +904,7 @@ app.get('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const prod = produtos.find(p => p.id === id);
-    if (!prod) return res.status(404).json({ message: 'Produto n�o encontrado.' });
+    if (!prod) return res.status(404).json({ message: 'Produto n?o encontrado.' });
     res.status(200).json(prod);
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao buscar produto.' });
@@ -915,8 +915,8 @@ app.post('/api/produtos', (req, res) => {
   try {
     const novo = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
-    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inv�lido.' });
-    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'J� existe um produto com este ID.' });
+    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inv?lido.' });
+    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'J? existe um produto com este ID.' });
     produtos.push(novo);
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(201).json({ message: 'Produto adicionado com sucesso.' });
@@ -931,7 +931,7 @@ app.put('/api/produtos/:id', (req, res) => {
     const body = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto n�o encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto n?o encontrado.' });
     produtos[idx] = { ...produtos[idx], ...body, id };
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(200).json({ message: 'Produto atualizado com sucesso.' });
@@ -945,10 +945,10 @@ app.delete('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto n�o encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto n?o encontrado.' });
     produtos.splice(idx, 1);
     writeData(PRODUCTS_DB_FILE, produtos);
-    res.status(200).json({ message: 'Produto exclu�do com sucesso.' });
+    res.status(200).json({ message: 'Produto exclu?do com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir produto.' });
   }
@@ -994,8 +994,8 @@ app.get('/api/sales', (req, res) => {
     try { normalizeSalesFile(); } catch (_) { }
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de vendas.' });
 
     const sales = readData(SALES_DB_FILE) || [];
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
@@ -1070,8 +1070,8 @@ app.get('/api/sales/summary', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de vendas.' });
 
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
     const { from, to, seller = '', search = '', productId: productIdStr } = req.query || {};
@@ -1142,16 +1142,16 @@ app.delete('/api/sales/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda n�o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda n?o encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda exclu�da com sucesso.' });
+    return res.status(200).json({ message: 'Venda exclu?da com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -1162,16 +1162,16 @@ app.post('/api/sales/:id/delete', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda n�o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda n?o encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda exclu�da com sucesso.' });
+    return res.status(200).json({ message: 'Venda exclu?da com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -1182,14 +1182,14 @@ app.patch('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda n�o encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda n?o encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -1223,14 +1223,14 @@ app.post('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda n�o encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda n?o encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -1259,16 +1259,16 @@ app.post('/api/sales/:id/items/remove', (req, res) => {
   }
 });
 
-// CASH: Refund (Devolu��o) - admin-only
+// CASH: Refund (Devolu??o) - admin-only
 app.post('/api/refunds', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devolu��es.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devolu??es.' });
 
     const { saleId, amount, user, reason, items } = req.body || {};
-    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolu��o inv�lido.' });
+    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolu??o inv?lido.' });
 
     const devolucoes = readDevolucoes() || [];
     const entry = {
@@ -1312,9 +1312,9 @@ app.post('/api/refunds', (req, res) => {
       }
     } catch (_) { }
 
-    res.status(201).json({ message: 'Devolu��o registrada com sucesso!', refund: entry });
+    res.status(201).json({ message: 'Devolu??o registrada com sucesso!', refund: entry });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao registrar devolu��o.' });
+    res.status(500).json({ message: 'Erro interno ao registrar devolu??o.' });
   }
 });
 
@@ -1323,18 +1323,18 @@ app.delete('/api/refunds/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devolu��es.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devolu??es.' });
 
     const { id } = req.params;
     const devolucoes = readDevolucoes() || [];
     const idx = devolucoes.findIndex(r => String(r.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Devolu��o n�o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Devolu??o n?o encontrada.' });
     devolucoes.splice(idx, 1);
     writeDevolucoes(devolucoes);
-    return res.status(200).json({ message: 'Devolu��o exclu�da com sucesso.' });
+    return res.status(200).json({ message: 'Devolu??o exclu?da com sucesso.' });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao excluir devolu��o.' });
+    res.status(500).json({ message: 'Erro interno ao excluir devolu??o.' });
   }
 });
 
@@ -1342,7 +1342,7 @@ app.delete('/api/refunds/:id', (req, res) => {
 app.post('/api/sangria', (req, res) => {
   try {
     const { amount, user, reason } = req.body || {};
-    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria � inv�lido.' });
+    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria ? inv?lido.' });
     const transactions = readData(TRANSACTIONS_DB_FILE);
     transactions.push({ id: Date.now(), type: 'sangria', amount, user, date: new Date().toISOString(), reason: reason || null });
     writeData(TRANSACTIONS_DB_FILE, transactions);
@@ -1367,7 +1367,7 @@ const handleSuprimentoRegistro = (req, res) => {
     res.status(201).json({ message: 'Suprimento registrado com sucesso!', suprimento });
   } catch (e) {
     const msg = e && e.message ? e.message : 'Erro interno ao registrar o suprimento.';
-    const status = msg.toLowerCase().includes('inv�lido') || msg.toLowerCase().includes('informado') ? 400 : 500;
+    const status = msg.toLowerCase().includes('inv?lido') || msg.toLowerCase().includes('informado') ? 400 : 500;
     res.status(status).json({ message: msg });
   }
 };
@@ -1378,8 +1378,8 @@ app.get('/api/transactions', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist�rico de caixa.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de caixa.' });
 
     const { type = '', from, to, user = '', search = '', id: idStr, productId: productIdStr, sort: sortKey, page: pageStr, pageSize: pageSizeStr } = req.query || {};
     const typeNorm = lowercaseText(type);
@@ -1462,7 +1462,7 @@ app.get('/api/transactions', (req, res) => {
 
     res.status(200).json({ total, page, pageSize: sizeNum, totalPages, results: paged });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao consultar transa��es.' });
+    res.status(500).json({ message: 'Erro interno ao consultar transa??es.' });
   }
 });
 
@@ -1487,7 +1487,7 @@ app.delete('/api/transactions/:id', (req, res) => {
   }
 });
 
-// CAIXA: resumo e fechamento di�rio
+// CAIXA: resumo e fechamento di?rio
 const resumoRoutes = ['/api/caixa/resumo', '/caixa/resumo'];
 const fechamentoRoutes = ['/api/caixa/fechar', '/caixa/fechar'];
 const DIF_TOLERANCIA = 0.01;
@@ -1511,12 +1511,13 @@ app.get(resumoRoutes, async (req, res) => {
 app.post(fechamentoRoutes, async (req, res) => {
   try {
     const session = getSession(req);
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv�lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem fechar o caixa.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    const cargo = canonicalCargo(session.cargo);
+    if (!['Administrador', 'Funcionario'].includes(cargo)) return res.status(403).json({ message: 'Apenas administradores ou funcionarios podem fechar o caixa.' });
 
     const body = req.body || {};
     const dia = toDayKey(body.data || new Date());
-    if (!dia) return res.status(400).json({ message: 'Data do fechamento inv�lida.' });
+    if (!dia) return res.status(400).json({ message: 'Data do fechamento inv?lida.' });
 
     const resumo = await calcularResumoDia(dia);
     const dinheiroContado = safeNumber(body.dinheiroContado);
@@ -1559,7 +1560,7 @@ app.post(fechamentoRoutes, async (req, res) => {
     res.status(500).json({ message: e.message || 'Erro ao salvar fechamento.' });
   }
 });
-// CAIXA: histórico de fechamentos (admin-only)
+// CAIXA: hist�rico de fechamentos (admin-only)
 app.get('/api/history/fechamentos', (req, res) => {
   try {
     const session = getSession(req);
