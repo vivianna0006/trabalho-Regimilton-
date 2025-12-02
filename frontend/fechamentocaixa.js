@@ -104,7 +104,7 @@ const resetFechamentoUI = () => {
   if (formEls.cartaoExtrato) formEls.cartaoExtrato.value = '';
   formEls.dinheiroContado.dataset.esperadoDinheiro = '0.00';
   formEls.cartaoExtrato.dataset.esperadoCartao = '0.00';
-  const zeros = { suprimentos: 0, vendasDinheiro: 0, vendasCartao: 0, sangrias: 0, devolucoes: 0, ajusteTroco: 0, lucro: 0, esperadoCaixaDinheiro: 0, esperadoGeral: 0 };
+  const zeros = { suprimentos: 0, vendasDinheiro: 0, vendasCartao: 0, sangrias: 0, sangriasSaida: 0, sangriasAbsoluto: 0, devolucoes: 0, ajusteTroco: 0, lucro: 0, esperadoCaixaDinheiro: 0, esperadoGeral: 0 };
   renderResumoEsperado(zeros);
   renderDiferencas();
   setStatusPill('Informe a contagem', 'info');
@@ -119,7 +119,7 @@ const renderResumoEsperado = (dados) => {
   const lucroVendas = document.getElementById('val-lucro-vendas');
   const lucroDescontos = document.getElementById('val-lucro-descontos');
   const totalVendas = Number(dados.vendasDinheiro || 0) + Number(dados.vendasCartao || 0);
-  const sangriasValor = Number.isFinite(dados.sangriasSaida) ? Math.abs(dados.sangriasSaida) : Math.abs(Number(dados.sangrias || 0));
+  const sangriasValor = Math.abs(Number(dados.sangriasAbsoluto ?? dados.sangrias ?? dados.sangriasSaida ?? 0));
   const descontos = sangriasValor + Math.abs(Number(dados.devolucoes || 0));
 
   document.getElementById('val-suprimento').textContent = formatarMoeda(dados.suprimentos);
@@ -217,7 +217,11 @@ const carregarResumo = async () => {
     const devolTotal = Number.isFinite(dados.devolucoes)
       ? Number(dados.devolucoes)
       : (Number(dados.devolucoesDinheiro || 0) + Number(dados.devolucoesCartao || 0));
-    const sangriasValor = Number.isFinite(dados.sangriasSaida) ? Math.abs(dados.sangriasSaida) : Math.abs(Number(dados.sangrias || 0));
+    const sangriasValor = Number.isFinite(dados.sangriasAbsoluto)
+      ? Math.abs(dados.sangriasAbsoluto)
+      : Number.isFinite(dados.sangriasSaida)
+        ? Math.abs(dados.sangriasSaida)
+        : Math.abs(Number(dados.sangrias || 0));
     const lucroTeorico = Number(dados.vendasDinheiro || 0)
       + Number(dados.vendasCartao || 0)
       - devolTotal
@@ -227,7 +231,9 @@ const carregarResumo = async () => {
       suprimentos: Number(dados.suprimentos || 0),
       vendasDinheiro: Number(dados.vendasDinheiro || 0),
       vendasCartao: Number(dados.vendasCartao || 0),
-      sangrias: sangriasValor,
+      sangrias: Number.isFinite(dados.sangrias) ? Number(dados.sangrias) : -sangriasValor,
+      sangriasSaida: Number.isFinite(dados.sangriasSaida) ? Number(dados.sangriasSaida) : -sangriasValor,
+      sangriasAbsoluto: sangriasValor,
       devolucoes: devolTotal,
       ajusteTroco: trocoAjuste,
       lucro: lucroTeorico,

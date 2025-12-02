@@ -296,7 +296,8 @@ async function calcularResumoDia(targetDate) {
     suprimentos,
     vendasDinheiro,
     vendasCartao: vendasCartaoLiquido,
-    sangrias: sangriasValor,
+    sangrias: sangriasSaida,
+    sangriasAbsoluto: sangriasValor,
     sangriasSaida,
     trocoCartaoPix,
     devolucoes: devolucoesDia,
@@ -1655,6 +1656,7 @@ app.get('/api/suprimentos', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Styllo Fashion ouvindo em http://localhost:${PORT}`);
 });
+
 
 
 
