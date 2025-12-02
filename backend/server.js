@@ -1,4 +1,4 @@
-// Clean Server for Styllo Fashion (UTF-8)
+﻿// Clean Server for Styllo Fashion (UTF-8)
 const express = require('express');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
@@ -268,9 +268,10 @@ async function calcularResumoDia(targetDate) {
     .filter((t) => toDayKey(t.date) === dia && (!corte || new Date(t.date) > corte))
     .reduce((acc, t) => acc + Math.abs(safeNumber(t.amount)), 0);
 
-  const sangrias = transactions
+  const sangriasValor = transactions
     .filter((t) => toDayKey(t.date) === dia && (!corte || new Date(t.date) > corte) && lowercaseText(t.type) === 'sangria')
     .reduce((acc, t) => acc + Math.abs(safeNumber(t.amount)), 0);
+  const sangriasSaida = -sangriasValor;
 
   let devolucoesDinheiro = 0;
   let devolucoesCartao = 0;
@@ -287,7 +288,7 @@ async function calcularResumoDia(targetDate) {
 
   const vendasDinheiroLiquidas = vendasDinheiro - devolucoesDinheiro;
   const vendasCartaoLiquido = vendasCartao - devolucoesCartao;
-  const esperadoCaixaDinheiro = suprimentos + vendasDinheiroLiquidas - sangrias - trocoCartaoPix;
+  const esperadoCaixaDinheiro = suprimentos + vendasDinheiroLiquidas + sangriasSaida - trocoCartaoPix;
   const esperadoGeral = esperadoCaixaDinheiro + vendasCartaoLiquido;
 
   return {
@@ -295,7 +296,8 @@ async function calcularResumoDia(targetDate) {
     suprimentos,
     vendasDinheiro,
     vendasCartao: vendasCartaoLiquido,
-    sangrias,
+    sangrias: sangriasValor,
+    sangriasSaida,
     trocoCartaoPix,
     devolucoes: devolucoesDia,
     devolucoesDinheiro,
@@ -1560,7 +1562,7 @@ app.post(fechamentoRoutes, async (req, res) => {
     res.status(500).json({ message: e.message || 'Erro ao salvar fechamento.' });
   }
 });
-// CAIXA: hist�rico de fechamentos (admin-only)
+// CAIXA: histórico de fechamentos (admin-only)
 app.get('/api/history/fechamentos', (req, res) => {
   try {
     const session = getSession(req);
@@ -1653,6 +1655,10 @@ app.get('/api/suprimentos', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Styllo Fashion ouvindo em http://localhost:${PORT}`);
 });
+
+
+
+
 
 
 

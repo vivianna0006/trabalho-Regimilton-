@@ -119,12 +119,13 @@ const renderResumoEsperado = (dados) => {
   const lucroVendas = document.getElementById('val-lucro-vendas');
   const lucroDescontos = document.getElementById('val-lucro-descontos');
   const totalVendas = Number(dados.vendasDinheiro || 0) + Number(dados.vendasCartao || 0);
-  const descontos = Math.abs(Number(dados.sangrias || 0)) + Math.abs(Number(dados.devolucoes || 0));
+  const sangriasValor = Number.isFinite(dados.sangriasSaida) ? Math.abs(dados.sangriasSaida) : Math.abs(Number(dados.sangrias || 0));
+  const descontos = sangriasValor + Math.abs(Number(dados.devolucoes || 0));
 
   document.getElementById('val-suprimento').textContent = formatarMoeda(dados.suprimentos);
   document.getElementById('val-vendas-dinheiro').textContent = formatarMoeda(dados.vendasDinheiro);
   document.getElementById('val-vendas-cartao').textContent = formatarMoeda(dados.vendasCartao);
-  document.getElementById('val-sangrias').textContent = formatarMoeda(-Math.abs(dados.sangrias || 0));
+  document.getElementById('val-sangrias').textContent = formatarMoeda(-sangriasValor);
   const devolTotal = Number.isFinite(dados.devolucoes)
     ? Number(dados.devolucoes)
     : (Number(dados.devolucoesDinheiro || 0) + Number(dados.devolucoesCartao || 0));
@@ -216,16 +217,17 @@ const carregarResumo = async () => {
     const devolTotal = Number.isFinite(dados.devolucoes)
       ? Number(dados.devolucoes)
       : (Number(dados.devolucoesDinheiro || 0) + Number(dados.devolucoesCartao || 0));
+    const sangriasValor = Number.isFinite(dados.sangriasSaida) ? Math.abs(dados.sangriasSaida) : Math.abs(Number(dados.sangrias || 0));
     const lucroTeorico = Number(dados.vendasDinheiro || 0)
       + Number(dados.vendasCartao || 0)
       - devolTotal
-      - Number(dados.sangrias || 0);
+      - sangriasValor;
 
     resumoEsperado = {
       suprimentos: Number(dados.suprimentos || 0),
       vendasDinheiro: Number(dados.vendasDinheiro || 0),
       vendasCartao: Number(dados.vendasCartao || 0),
-      sangrias: Number(dados.sangrias || 0),
+      sangrias: sangriasValor,
       devolucoes: devolTotal,
       ajusteTroco: trocoAjuste,
       lucro: lucroTeorico,
@@ -358,6 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setResumoDataLabel();
   carregarResumo();
 });
+
+
 
 
 
