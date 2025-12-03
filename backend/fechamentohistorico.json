@@ -1,28 +1,30 @@
 [
   {
-    "id": 1764687348532,
+    "id": 1764699635284,
     "data": "2025-12-02",
     "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T14:55:48.532Z",
+    "criadoEm": "2025-12-02T18:20:35.284Z",
     "esperado": {
       "date": "2025-12-02",
-      "suprimentos": 100,
-      "vendasDinheiro": 210,
-      "vendasCartao": 210,
+      "suprimentos": 0,
+      "vendasDinheiro": 20,
+      "vendasCartao": 0,
       "sangrias": 0,
+      "sangriasAbsoluto": 0,
+      "sangriasSaida": 0,
       "trocoCartaoPix": 0,
-      "devolucoes": 0,
-      "devolucoesDinheiro": 0,
+      "devolucoes": 20,
+      "devolucoesDinheiro": 20,
       "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 310,
-      "esperadoGeral": 520,
-      "corte": "2025-12-02T14:52:53.584Z",
+      "esperadoCaixaDinheiro": 0,
+      "esperadoGeral": 0,
+      "corte": "2025-12-02T18:16:32.259Z",
       "ajusteTroco": 0,
-      "trocoEntregue": 160
+      "trocoEntregue": 0
     },
     "contagem": {
-      "dinheiroContado": 310,
-      "cartaoContado": 210
+      "dinheiroContado": 0,
+      "cartaoContado": 0
     },
     "diferencas": {
       "dinheiro": 0,
@@ -32,153 +34,31 @@
     "status": "Bateu"
   },
   {
-    "id": 1764687173584,
+    "id": 1764699392259,
     "data": "2025-12-02",
     "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T14:52:53.584Z",
+    "criadoEm": "2025-12-02T18:16:32.259Z",
     "esperado": {
       "date": "2025-12-02",
       "suprimentos": 100,
-      "vendasDinheiro": 70,
-      "vendasCartao": 0,
+      "vendasDinheiro": 40,
+      "vendasCartao": 20,
       "sangrias": 0,
+      "sangriasAbsoluto": 0,
+      "sangriasSaida": 0,
       "trocoCartaoPix": 0,
       "devolucoes": 0,
       "devolucoesDinheiro": 0,
       "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 170,
-      "esperadoGeral": 170,
-      "corte": "2025-12-02T14:51:59.423Z",
-      "ajusteTroco": 0,
-      "trocoEntregue": 0
-    },
-    "contagem": {
-      "dinheiroContado": 0,
-      "cartaoContado": 0
-    },
-    "diferencas": {
-      "dinheiro": -170,
-      "cartao": 0,
-      "geral": -170
-    },
-    "status": "Faltou"
-  },
-  {
-    "id": 1764687119423,
-    "data": "2025-12-02",
-    "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T14:51:59.423Z",
-    "esperado": {
-      "date": "2025-12-02",
-      "suprimentos": 100,
-      "vendasDinheiro": 210,
-      "vendasCartao": 0,
-      "sangrias": 0,
-      "devolucoes": 0,
-      "devolucoesDinheiro": 0,
-      "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 310,
-      "esperadoGeral": 310,
-      "corte": "2025-12-02T14:34:17.146Z",
+      "esperadoCaixaDinheiro": 140,
+      "esperadoGeral": 160,
+      "corte": null,
       "ajusteTroco": 0,
       "trocoEntregue": 30
     },
     "contagem": {
-      "dinheiroContado": 310,
-      "cartaoContado": 0
-    },
-    "diferencas": {
-      "dinheiro": 0,
-      "cartao": 0,
-      "geral": 0
-    },
-    "status": "Bateu"
-  },
-  {
-    "id": 1764686057146,
-    "data": "2025-12-02",
-    "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T14:34:17.146Z",
-    "esperado": {
-      "date": "2025-12-02",
-      "suprimentos": 100,
-      "vendasDinheiro": 70,
-      "vendasCartao": 0,
-      "sangrias": 0,
-      "devolucoes": 0,
-      "devolucoesDinheiro": 0,
-      "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 170,
-      "esperadoGeral": 170,
-      "corte": "2025-12-02T14:08:47.992Z",
-      "ajusteTroco": 0,
-      "trocoEntregue": 0
-    },
-    "contagem": {
-      "dinheiroContado": 0,
-      "cartaoContado": 0
-    },
-    "diferencas": {
-      "dinheiro": -170,
-      "cartao": 0,
-      "geral": -170
-    },
-    "status": "Faltou"
-  },
-  {
-    "id": 1764684527992,
-    "data": "2025-12-02",
-    "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T14:08:47.992Z",
-    "esperado": {
-      "date": "2025-12-02",
-      "suprimentos": 100,
-      "vendasDinheiro": 0,
-      "vendasCartao": 0,
-      "sangrias": 0,
-      "devolucoes": 0,
-      "devolucoesDinheiro": 0,
-      "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 100,
-      "esperadoGeral": 100,
-      "corte": "2025-12-02T13:25:28.052Z",
-      "ajusteTroco": 0,
-      "trocoEntregue": 0
-    },
-    "contagem": {
-      "dinheiroContado": 100,
-      "cartaoContado": 0
-    },
-    "diferencas": {
-      "dinheiro": 0,
-      "cartao": 0,
-      "geral": 0
-    },
-    "status": "Bateu"
-  },
-  {
-    "id": 1764681928052,
-    "data": "2025-12-02",
-    "usuario": "anninhatwice9",
-    "criadoEm": "2025-12-02T13:25:28.052Z",
-    "esperado": {
-      "date": "2025-12-02",
-      "suprimentos": 100,
-      "vendasDinheiro": 0,
-      "vendasCartao": 0,
-      "sangrias": 0,
-      "devolucoes": 0,
-      "devolucoesDinheiro": 0,
-      "devolucoesCartao": 0,
-      "esperadoCaixaDinheiro": 100,
-      "esperadoGeral": 100,
-      "corte": "2025-12-02T13:12:54.187Z",
-      "ajusteTroco": 0,
-      "trocoEntregue": 0
-    },
-    "contagem": {
-      "dinheiroContado": 100,
-      "cartaoContado": 0
+      "dinheiroContado": 140,
+      "cartaoContado": 20
     },
     "diferencas": {
       "dinheiro": 0,

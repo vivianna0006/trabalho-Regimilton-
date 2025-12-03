@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <link rel="stylesheet" href="notifications.css">
     <link rel="stylesheet" href="sangria.css">
 </head>
+
 <body>
     <header>
         <nav></nav>
@@ -20,7 +22,8 @@
                 <p class="sangria-kicker">Retirada do caixa</p>
                 <div class="sangria-card__header">
                     <h1>Registrar sangria</h1>
-                    <p class="sangria-lead">Use esta tela para registrar a retirada de valores e manter o fechamento coerente.</p>
+                    <p class="sangria-lead">Use esta tela para registrar a retirada de valores e manter o fechamento
+                        coerente.</p>
                 </div>
                 <form id="sangria-form" class="sangria-form">
                     <div class="form-row">
@@ -31,11 +34,13 @@
                         </div>
                         <div class="input-group">
                             <label for="sangria-motivo">Motivo da sangria</label>
-                            <input type="text" id="sangria-motivo" placeholder="Ex: Pagamento de fornecedor" maxlength="120" required>
+                            <input type="text" id="sangria-motivo" placeholder="Ex: Pagamento de fornecedor"
+                                maxlength="120" required>
                             <span class="input-hint">Descreva brevemente a justificativa da retirada.</span>
                         </div>
                     </div>
-                    <div class="sangria-safe-hint">A sangria reduz o saldo do caixa atual. Verifique valores antes de confirmar.</div>
+                    <div class="sangria-safe-hint">A sangria reduz o saldo do caixa atual. Verifique valores antes de
+                        confirmar.</div>
                     <div class="sangria-actions">
                         <button type="submit" class="sangria-submit-btn">Confirmar retirada</button>
                         <button type="reset" class="sangria-reset-btn">Limpar</button>
@@ -46,7 +51,7 @@
             <div class="sangria-card sangria-side-card">
                 <div class="sangria-side-header">
                     <div>
-                        <p class="sangria-kicker">Boas praticas</p>
+                        <p class="sangria-kicker">Boas práticas</p>
                         <h2>Deixe o registro claro</h2>
                         <p class="sangria-lead">Motivos detalhados ajudam a reconciliar o caixa e evitam retrabalho.</p>
                     </div>
@@ -54,16 +59,16 @@
                 </div>
 
                 <ul class="sangria-tips">
-                    <li>Use motivos objetivos (ex: Troca de cedulas para troco).</li>
+                    <li>Use motivos objetivos (ex: Troca de cédulas para troco).</li>
                     <li>Preencha sempre logo apos a retirada para manter a linha do tempo correta.</li>
                     <li>Combine o valor com o comprovante fisico que sera anexado.</li>
                 </ul>
 
                 <div class="sangria-summary">
                     <div>
-                        <p class="sangria-lead">Quer revisar o que ja saiu do caixa? Consulte o historico completo.</p>
+                        <p class="sangria-lead">Quer revisar o que ja saiu do caixa? Consulte o histórico completo.</p>
                     </div>
-                    <a class="sangria-link" href="historico.html?tab=sangrias">Ver historico</a>
+                    <a class="sangria-link" href="historico.html?tab=sangrias">Ver histórico</a>
                 </div>
             </div>
         </section>
@@ -73,4 +78,5 @@
     <script src="auth.js"></script>
     <script src="sangria.js"></script>
 </body>
+
 </html>

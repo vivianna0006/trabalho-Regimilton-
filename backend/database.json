@@ -1,35 +1,13 @@
 [
   {
     "username": "anninhatwice9",
-    "password": "$2b$10$IsNwtYOobjUD4kUZJu32FeMERE6agZYCYOMzMCi/.jDYx2c1axy82",
+    "password": "$2b$10$REMw008w2Bq1jbQz1vFam.1R4P2QdREEsKeKY4QakIUy3DBbZQR2C",
     "cargo": "Administrador",
-    "nomeCompleto": "anna twice gg da nação",
-    "cpf": "72895056030",
-    "email": "omundoteamatwice@gmail.com",
-    "telefone": "61986012478",
-    "createdAt": "2025-10-11T22:50:51.941Z",
-    "updatedAt": "2025-10-11T22:50:51.941Z"
-  },
-  {
-    "username": "30818526254",
-    "password": "$2b$10$aiKJibhY7CIOP1nTG8a64Oo05i/k.RoaqTq9GKmQdfyIbYO1Lb.SS",
-    "cargo": "Funcionario",
-    "nomeCompleto": "Pupyo Wiguowuo",
-    "cpf": "30818526254",
-    "email": "admin@example.com",
-    "telefone": "56211541145",
-    "createdAt": "2025-10-13T00:52:19.055Z",
-    "updatedAt": "2025-10-13T00:52:19.055Z"
-  },
-  {
-    "username": "54527988034",
-    "password": "$2b$10$atbTa/MPN7pYi99gZ/MeHOdCIUgAYRjwiQlpwJYR9zXrcGlcfGQO2",
-    "cargo": "Funcionario",
-    "nomeCompleto": "luiza pereira de santos",
-    "cpf": "54527988034",
-    "email": "luiz@gmail.com",
-    "telefone": "56211541145",
-    "createdAt": "2025-12-02T01:27:17.830Z",
-    "updatedAt": "2025-12-02T01:27:17.830Z"
+    "nomeCompleto": "anninhatwice9",
+    "cpf": null,
+    "email": null,
+    "telefone": null,
+    "createdAt": "2025-12-02T18:09:39.474Z",
+    "updatedAt": "2025-12-02T18:09:39.474Z"
   }
 ]

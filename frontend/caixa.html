@@ -7,9 +7,7 @@
     <title>Caixa - Styllo Fashion</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="main.css">
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="componentes.css">
@@ -24,7 +22,7 @@
     <main class="main-content caixa-content">
         <section class="caixa-hero">
             <div class="caixa-hero__text">
-                <span class="eyebrow">Caixa rapido</span>
+                <span class="eyebrow">Caixa rápido</span>
                 <div class="caixa-hero__title">
                     <h1>Registro de Venda</h1>
                     <span class="pill pill--soft">Fluxo ativo</span>
@@ -75,7 +73,7 @@
                 <div class="list-header">
                     <span>Item</span>
                     <span>Valor</span>
-                    <span class="sr-only">Acoes</span>
+                    <span class="sr-only">Ações</span>
                 </div>
                 <div id="lista-venda" class="caixa-lista caixa-lista--venda" aria-live="polite"></div>
                 <div class="caixa-total-acoes">
@@ -94,18 +92,20 @@
                             <label for="forma-pagamento">Forma de pagamento</label>
                             <select id="forma-pagamento">
                                 <option value="dinheiro" selected>Dinheiro</option>
-                                <option value="cartao_credito">Cartao credito</option>
-                                <option value="cartao_debito">Cartao debito</option>
+                                <option value="cartao_credito">Cartão crédito</option>
+                                <option value="cartao_debito">Cartáo débito</option>
                                 <option value="pix">Pix</option>
                             </select>
                         </div>
                         <div class="troco-field">
                             <label for="valor-recebido">Valor recebido</label>
-                            <input type="text" id="valor-recebido" inputmode="decimal" placeholder="0,00" autocomplete="off">
+                            <input type="text" id="valor-recebido" inputmode="decimal" placeholder="0,00"
+                                autocomplete="off">
                         </div>
                         <div class="troco-field">
                             <label for="valor-troco">Troco entregue</label>
-                            <input type="text" id="valor-troco" inputmode="decimal" placeholder="0,00" autocomplete="off">
+                            <input type="text" id="valor-troco" inputmode="decimal" placeholder="0,00"
+                                autocomplete="off">
                         </div>
                         <div class="troco-field troco-field--preview">
                             <label>Troco previsto</label>
@@ -123,18 +123,18 @@
                 <section class="caixa-section caixa-section--busca">
                     <div class="section-head">
                         <div>
-                            <p class="eyebrow">Busca rapida</p>
+                            <p class="eyebrow">Busca rápida</p>
                             <h2>Buscar produto</h2>
-                            <p class="section-subtitle">Use codigo ou nome para localizar e adicionar ao carrinho.</p>
+                            <p class="section-subtitle">Use código ou nome para localizar e adicionar ao carrinho.</p>
                         </div>
                     </div>
                     <div class="input-group input-group--search">
-                        <input type="text" id="busca-produto" placeholder="Digite o codigo ou nome do produto...">
+                        <input type="text" id="busca-produto" placeholder="Digite o código ou nome do produto...">
                     </div>
                     <div class="list-header list-header--produtos">
                         <span>Produto</span>
                         <span>Valor</span>
-                        <span class="sr-only">Acoes</span>
+                        <span class="sr-only">Ações</span>
                     </div>
                     <div id="lista-produtos" class="caixa-lista caixa-lista--produtos" aria-live="polite"></div>
                 </section>

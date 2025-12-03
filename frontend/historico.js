@@ -77,14 +77,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // Vendedores
   const setDefaultVendedores = () => {
     document.querySelectorAll('select[id^="filtro-vendedor"]').forEach((s) => {
-      if (s) s.innerHTML = '<option value="">Todos os funcionarios</option>';
+      if (s) s.innerHTML = '<option value="">Todos os funcionários</option>';
     });
   };
   const setVendedores = (users) => {
     const list = Array.from(new Set((users || []).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
     document.querySelectorAll('select[id^="filtro-vendedor"]').forEach((s) => {
       if (!s) return;
-      s.innerHTML = '<option value="">Todos os funcionarios</option>';
+      s.innerHTML = '<option value="">Todos os funcionários</option>';
       list.forEach(u => { s.innerHTML += `<option value="${u}">${u}</option>`; });
     });
   };
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ordem: document.getElementById('filtro-ordem-vendas'),
     limpar: document.getElementById('limpar-filtros-vendas'),
     exportar: document.getElementById('exportar-vendas-csv'),
-    busca: ensureSearchInput('vendas', 'filtro-busca-vendas', 'Buscar por ID da venda, item ou nome do funcionario...')
+    busca: ensureSearchInput('vendas', 'filtro-busca-vendas', 'Buscar por ID da venda, item ou nome do funcionário...')
   };
   const resumoVendasEl = document.getElementById('resumo-vendas');
   const vendasListaEl = document.getElementById('historico-vendas-lista');
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>${formatDateTime(venda.date)}</span>
         </div>
         <div class="item-details">
-          <span><b>Funcionario:</b> ${venda.seller || '-'}</span>
+          <span><b>Funcionário:</b> ${venda.seller || '-'}</span>
           <span><b>Total:</b> ${formatMoney(totalVenda)}</span>
           ${venda.paymentMethod || venda.metodoPagamento ? `<span><b>Pagamento:</b> ${venda.paymentMethod || venda.metodoPagamento}</span>` : ''}
           <div><b>Itens vendidos:</b><ul class="product-list">${produtosHTML}</ul></div>
@@ -226,12 +226,12 @@ document.addEventListener('DOMContentLoaded', () => {
       let resp = await api(`/sales/${saleId}`, { method: 'DELETE', headers: { 'x-auth-token': token() } });
       if (!resp.ok) resp = await api(`/sales/${saleId}/delete`, { method: 'POST', headers: { 'x-auth-token': token() } });
       if (!resp.ok) throw new Error('Falha ao excluir');
-      try { showToast('Venda excluida com sucesso!'); } catch (_) { }
+      try { showToast('Venda excluída com sucesso!'); } catch (_) { }
       await buscarHistoricoVendas();
       try { await buscarHistoricoDevolucoes(); } catch (_) { }
     } catch (e) {
       console.error('Erro ao excluir venda:', e);
-      try { showToast('Nao foi possivel excluir a venda.', 'error'); } catch (_) { }
+      try { showToast('Não foi possivel excluir a venda.', 'error'); } catch (_) { }
     }
   };
 
@@ -262,14 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = { saleId, amount, user: currentUser(), reason: (devMotivoEl?.value || '').trim(), items: selecionados };
     try {
       const resp = await api('/refunds', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-auth-token': token() }, body: JSON.stringify(payload) });
-      if (!resp.ok) throw new Error('Falha ao registrar devolucao');
-      try { showToast('Devolucao registrada com sucesso!'); } catch (_) { }
+      if (!resp.ok) throw new Error('Falha ao registrar devolução');
+      try { showToast('Devolução registrada com sucesso!'); } catch (_) { }
       closeModal();
       await buscarHistoricoVendas();
       try { await buscarHistoricoDevolucoes(); } catch (_) { }
     } catch (e) {
-      console.error('Erro ao registrar devolucao:', e);
-      try { showToast('Nao foi possivel registrar a devolucao.', 'error'); } catch (_) { }
+      console.error('Erro ao registrar devolução:', e);
+      try { showToast('Não foi possivel registrar a devolução.', 'error'); } catch (_) { }
     }
   };
 
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const total = arr.reduce((s, t) => s + (Number(t.amount || 0) || 0), 0);
       resumoEl.textContent = `${arr.length} registro(s) - Total ${formatMoney(total)}`;
     }
-    if (!arr.length) { lista.innerHTML = '<p>Nenhuma transacao encontrada.</p>'; return; }
+    if (!arr.length) { lista.innerHTML = '<p>Nenhuma transação encontrada.</p>'; return; }
     arr.forEach(t => {
       const div = document.createElement('div');
       div.className = 'history-item';
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>${formatDateTime(t.date)}</span>
         </div>
         <div class="item-details">
-          <span><b>Funcionario:</b> ${t.user || '-'}</span>
+          <span><b>Funcionário:</b> ${t.user || '-'}</span>
           <span><b>Tipo:</b> ${t.type || '-'}</span>
           <span><b>Valor:</b> ${formatMoney(t.amount)}</span>
           ${t.description || t.reason ? `<div><b>Obs:</b> ${t.description || t.reason}</div>` : ''}
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const excluirTransacao = async (id, refreshCb) => {
-    if (!isAdmin()) { try { showToast('Area restrita a administradores.', 'error'); } catch (_) { } return; }
+    if (!isAdmin()) { try { showToast('Área restrita a administradores.', 'error'); } catch (_) { } return; }
     if (!confirm('Excluir este registro?')) return;
     try {
       const resp = await api(`/transactions/${id}`, { method: 'DELETE', headers: { 'x-auth-token': token() } });
@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof refreshCb === 'function') refreshCb();
     } catch (e) {
       console.error('Erro ao excluir transacao:', e);
-      try { showToast('Nao foi possivel excluir a transacao.', 'error'); } catch (_) { }
+      try { showToast('Não foi possivel excluir a transacao.', 'error'); } catch (_) { }
     }
   };
   const excluirSuprimento = async (id, refreshCb) => {
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof refreshCb === 'function') refreshCb();
     } catch (e) {
       console.error('Erro ao excluir suprimento:', e);
-      try { showToast('Nao foi possivel excluir o suprimento.', 'error'); } catch (_) { }
+      try { showToast('Não foi possivel excluir o suprimento.', 'error'); } catch (_) { }
     }
   };
 
@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!lista) return;
     lista.innerHTML = '';
     const arr = safeList(items);
-    if (!arr.length) { lista.innerHTML = '<p>Nenhuma devolucao encontrada.</p>'; return; }
+    if (!arr.length) { lista.innerHTML = '<p>Nenhuma devolução encontrada.</p>'; return; }
     arr.forEach((r) => {
       const div = document.createElement('div');
       div.className = 'history-item';
@@ -553,11 +553,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }).join('');
       div.innerHTML = `
         <div class="item-header">
-          <span>Devolucao ID: ${r.id}</span>
+          <span>Devolução ID: ${r.id}</span>
           <span>${formatDateTime(r.date)}</span>
         </div>
         <div class="item-details">
-          <span><b>Funcionario:</b> ${r.user || '-'}</span>
+          <span><b>Funcionário:</b> ${r.user || '-'}</span>
           ${r.saleId ? `<span><b>Venda:</b> ${r.saleId}</span>` : ''}
           <span><b>Total:</b> ${formatMoney(r.amount)}</span>
           <div><b>Motivo:</b> ${r.reason ? String(r.reason) : '-'}</div>
@@ -666,12 +666,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>${formatDateTime(f.criadoEm || f.data)}</span>
         </div>
         <div class="item-details">
-          <span><b>Funcionario:</b> ${f.usuario || f.user || '-'}</span>
+          <span><b>Funcionário:</b> ${f.usuario || f.user || '-'}</span>
           <span><b>Status:</b> ${f.status || '-'}</span>
           <div><b>Esperado (caixa):</b> ${formatMoney(esperado.esperadoCaixaDinheiro || 0)}</div>
           <div><b>Esperado (geral):</b> ${formatMoney(esperado.esperadoGeral || 0)}</div>
           <div><b>Contagem:</b> Dinheiro ${formatMoney(contagem.dinheiroContado || 0)} | Cartao ${formatMoney(contagem.cartaoContado || 0)}</div>
-          <div><b>Diferencas:</b> Dinheiro ${formatMoney(difs.dinheiro || 0)} | Cartao ${formatMoney(difs.cartao || 0)} | Geral ${formatMoney(difs.geral || 0)}</div>
+          <div><b>Diferenças:</b> Dinheiro ${formatMoney(difs.dinheiro || 0)} | Cartao ${formatMoney(difs.cartao || 0)} | Geral ${formatMoney(difs.geral || 0)}</div>
         </div>
       `;
       listaFechamentosEl.appendChild(div);

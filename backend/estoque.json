@@ -1,17 +1,24 @@
 [
   {
-    "id": "001",
-    "nome": "Blusa cinza",
-    "descricao": "magras magras magras",
-    "valor": 70,
-    "categoriaNome": "Blusas",
-    "subcategoriaNome": "Feminina",
+    "id": "001-OC",
+    "nome": "óculos coração",
+    "descricao": "vermelho",
+    "valor": 20,
+    "categoriaNome": "Acessórios",
+    "subcategoriaNome": "Feminino",
     "tamanhos": {
-      "PP": 60,
-      "P": 0,
-      "M": 0,
-      "G": 0,
-      "GG": 0
+      "Unico": 20
+    }
+  },
+  {
+    "id": "001",
+    "nome": "fdvfdb",
+    "descricao": "bfbfbz",
+    "valor": 20,
+    "categoriaNome": "Acessórios",
+    "subcategoriaNome": "Feminino",
+    "tamanhos": {
+      "Unico": 1
     }
   }
 ]

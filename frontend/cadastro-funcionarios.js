@@ -7,7 +7,7 @@ const API_BASE = window.ApiClient ? window.ApiClient.getBaseUrl() : 'http://loca
     const cargo = (sessionStorage.getItem('userCargo') || '').trim().toLowerCase();
     const isAdmin = cargo === 'administrador' || cargo === 'gerente';
     if (!isAdmin) {
-        alert('Apenas gerentes/administradores podem acessar o cadastro de funcionÃ¡rios.');
+        alert('Apenas gerentes/administradores podem acessar o cadastro de funcionários.');
         try { window.location.replace('menu.html'); } catch (_) { window.location.href = './menu.html'; }
     }
 })();

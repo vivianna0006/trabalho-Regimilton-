@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,62 @@
     <link rel="stylesheet" href="menu.css">
     <link rel="stylesheet" href="componentes.css">
     <link rel="stylesheet" href="notifications.css">
+    <style>
+        /* Estilos específicos para o cartão de alerta */
+        .alerta-card {
+            background-color: #fff1f2;
+            /* Fundo avermelhado claro */
+            border: 1px solid #fda4af;
+            /* Borda vermelha suave */
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 6px rgba(220, 38, 38, 0.1);
+            display: none;
+            /* Começa oculto */
+        }
+
+        .alerta-card h3 {
+            color: #991b1b;
+            /* Vermelho escuro */
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lista-alertas {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .lista-alertas li {
+            padding: 8px 0;
+            border-bottom: 1px dashed #fecdd3;
+            color: #7f1d1d;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+
+        .lista-alertas li strong {
+            color: #b91c1c;
+        }
+
+        .badge-critico {
+            background: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
     <header>
         <nav></nav>
@@ -18,9 +74,11 @@
             <div class="menu-hero__text">
                 <span class="menu-hero__subtitle">Bem-vindo(a), <strong id="menu-username">Usuário</strong></span>
                 <h1 class="menu-hero__title">Escolha o que deseja gerenciar hoje</h1>
-                <p class="menu-hero__description">Acompanhe o movimento do caixa, cadastre novos produtos e mantenha tudo organizado em um único lugar.</p>
+                <p class="menu-hero__description">Acompanhe o movimento do caixa, cadastre novos produtos e mantenha
+                    tudo organizado em um único lugar.</p>
                 <div class="menu-hero__actions">
-                    <a class="menu-hero__btn menu-hero__btn--primary" href="./caixa.html">Ir para o Registro de Venda</a>
+                    <a class="menu-hero__btn menu-hero__btn--primary" href="./caixa.html">Ir para o Registro de
+                        Venda</a>
                     <a class="menu-hero__btn menu-hero__btn--secondary" href="./estoque.html">Ver Estoque</a>
                 </div>
             </div>
@@ -29,117 +87,105 @@
                 <ul>
                     <li><span class="label">Perfil:</span> <span id="menu-user-role">-</span></li>
                     <li><span class="label">Último acesso:</span> <span id="menu-last-login">Agora mesmo</span></li>
-                    <li><span class="label">Status:</span> <span class="status-pill status-pill--active">Sistema operacional</span></li>
+                    <li><span class="label">Status:</span> <span class="status-pill status-pill--active">Sistema
+                            operacional</span></li>
                 </ul>
             </div>
         </section>
+
+        <section id="alerta-estoque-container" class="alerta-card">
+            <h3>⚠️ Atenção: Estoque Baixo</h3>
+            <p>Os seguintes produtos estão com poucas unidades e precisam de reposição:</p>
+            <ul id="lista-alertas-itens" class="lista-alertas">
+            </ul>
+        </section>
+
         <section class="menu-info">
             <div class="menu-info__card">
                 <h4>Boas práticas</h4>
-                <p>Mantenha o estoque atualizado diariamente e realize sangrias sempre que o caixa estiver acima do limite definido pela loja.</p>
+                <p>Mantenha o estoque atualizado diariamente e realize sangrias sempre que o caixa estiver acima do
+                    limite definido pela loja.</p>
             </div>
             <div class="menu-info__card">
                 <h4>Dica rápida</h4>
-                <p>Use o menu superior para navegar entre os módulos. As opções mudam conforme o cargo do usuário logado.</p>
+                <p>Use o menu superior para navegar entre os módulos. As opções mudam conforme o cargo do usuário
+                    logado.</p>
             </div>
         </section>
     </main>
 
-<script src="api-client.js"></script>
+    <script src="api-client.js"></script>
     <script src="auth.js"></script>
+    <script src="notifications.js"></script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- CÓDIGO EXISTENTE DE IDENTIFICAÇÃO ---
             const usernameEl = document.getElementById('menu-username');
             const roleEl = document.getElementById('menu-user-role');
             const username = sessionStorage.getItem('username');
             const cargo = sessionStorage.getItem('userCargo');
-            const cargoNormalizado = (cargo || '').toString().trim().toLowerCase();
-            const isGerente = cargoNormalizado === 'gerente' || cargoNormalizado === 'administrador';
 
-            if (username && usernameEl) {
-                usernameEl.textContent = username;
+            if (username && usernameEl) usernameEl.textContent = username;
+            if (roleEl) roleEl.textContent = cargo || 'Usuário';
+
+            // --- NOVO CÓDIGO: VERIFICAÇÃO DE ESTOQUE ---
+            // Apenas verifica se for Administrador ou Gerente
+            if (cargo && (cargo.toLowerCase() === 'administrador' || cargo.toLowerCase() === 'gerente')) {
+                verificarEstoqueBaixo();
             }
 
-            if (roleEl) {
-                roleEl.textContent = cargo || 'Usuário';
-            }
+            async function verificarEstoqueBaixo() {
+                try {
+                    // Busca todos os produtos usando seu ApiClient
+                    const response = await ApiClient.fetch('/produtos');
+                    if (!response.ok) return; // Se falhar silenciosamente, não mostra nada
 
-            // Corrige acentuação de textos estáticos
-            try {
-                const heroDesc = document.querySelector('.menu-hero__description');
-                if (heroDesc) heroDesc.textContent = 'Acompanhe o movimento do caixa, cadastre novos produtos e mantenha tudo organizado em um único lugar.';
+                    const produtos = await response.json();
+                    const containerAlerta = document.getElementById('alerta-estoque-container');
+                    const listaAlerta = document.getElementById('lista-alertas-itens');
 
-                const cardTitle = document.querySelector('.menu-hero__card h2');
-                if (cardTitle) cardTitle.textContent = 'Resumo rápido';
+                    let produtosEmAlerta = [];
 
-                const labels = document.querySelectorAll('.menu-hero__card .label');
-                if (labels && labels[1]) labels[1].textContent = 'Último acesso:';
+                    produtos.forEach(produto => {
+                        // Calcula o total somando todos os tamanhos (lógica baseada no seu estoque.js)
+                        const total = Object.values(produto.tamanhos || {}).reduce((acc, qtd) => acc + Number(qtd || 0), 0);
 
-                const boas = Array.from(document.querySelectorAll('.menu-info__card h4')).find(el => el.textContent.includes('Boas'));
-                if (boas) boas.textContent = 'Boas práticas';
-                const dica = Array.from(document.querySelectorAll('.menu-info__card h4')).find(el => el.textContent.includes('Dica'));
-                if (dica) dica.textContent = 'Dica rápida';
+                        // Define o limite de alerta (ex: 15 unidades, conforme sua regra de "alerta" no estoque.js)
+                        if (total <= 15) {
+                            produtosEmAlerta.push({
+                                nome: produto.nome,
+                                total: total,
+                                id: produto.id
+                            });
+                        }
+                    });
 
-                const dicaP = Array.from(document.querySelectorAll('.menu-info__card p')).find(el => el.textContent.includes('menu superior'));
-                if (dicaP) dicaP.textContent = 'Use o menu superior para navegar entre os módulos. As opções mudam conforme o cargo do usuário logado.';
-            } catch (_) {}
+                    // Se houver produtos em alerta, exibe a seção
+                    if (produtosEmAlerta.length > 0) {
+                        containerAlerta.style.display = 'block';
 
-            // Alertas de estoque baixo para gerente
-            if (isGerente) {
-                const avisosRecentes = new Map();
-                const ALERT_TTL = 5 * 60 * 1000; // 5 minutos
+                        // Ordena para mostrar os mais críticos (menor quantidade) primeiro
+                        produtosEmAlerta.sort((a, b) => a.total - b.total);
 
-                const calcularNivelEstoque = (produto) => {
-                    const valores = Object.values(produto?.tamanhos || {})
-                        .map((v) => Number(v || 0))
-                        .filter((v) => !Number.isNaN(v));
-                    const total = valores.reduce((acc, v) => acc + v, 0);
-                    const menor = valores.length ? Math.min(...valores) : 0;
+                        // Gera o HTML da lista
+                        listaAlerta.innerHTML = produtosEmAlerta.map(p => `
+                            <li>
+                                <span>${p.nome} <small>(ID: ${p.id})</small></span>
+                                ${p.total === 0
+                                ? '<span class="badge-critico">ESGOTADO</span>'
+                                : `<strong>Restam: ${p.total}</strong>`}
+                            </li>
+                        `).join('');
 
-                    if (total === 0 || menor === 0 || total <= 5) return { nivel: 'baixo', total };
-                    if (total <= 15) return { nivel: 'medio-baixo', total };
-                    return { nivel: null, total };
-                };
-
-                const jaAvisado = (id) => {
-                    const agora = Date.now();
-                    const ultimo = avisosRecentes.get(id);
-                    if (ultimo && agora - ultimo < ALERT_TTL) return true;
-                    avisosRecentes.set(id, agora);
-                    return false;
-                };
-
-                const exibirAlertasEstoque = async () => {
-                    try { await ApiClient.fetch('/status', { cache: 'no-store' }); } catch (_) { /* ignora ping */ }
-                    try {
-                        const resp = await ApiClient.fetch('/produtos', { cache: 'no-store' });
-                        if (!resp.ok) return;
-                        const produtos = await resp.json();
-                        const alertas = (Array.isArray(produtos) ? produtos : [])
-                            .map((p) => {
-                                const { nivel, total } = calcularNivelEstoque(p);
-                                return { produto: p, nivel, total };
-                            })
-                            .filter((p) => p.nivel)
-                            .sort((a, b) => a.total - b.total)
-                            .slice(0, 5);
-
-                        alertas.forEach(({ produto, nivel, total }) => {
-                            const id = produto?.id || produto?._id || produto?.codigo || produto?.nome;
-                            if (jaAvisado(id)) return;
-                            const titulo = nivel === 'baixo' ? 'Estoque BAIXO' : 'Estoque médio-baixo';
-                            const texto = `${titulo}: ${produto?.nome || 'Produto sem nome'} com ${total} unidades.`;
-                            showToast(texto, 'error');
-                        });
-                    } catch (e) {
-                        console.error('Erro ao verificar estoque baixo', e);
+                        // Opcional: Mostra um Toast também
+                        if (typeof showToast === 'function') {
+                            showToast(`Atenção: ${produtosEmAlerta.length} produtos estão com estoque baixo!`, 'error');
+                        }
                     }
-                };
-
-                exibirAlertasEstoque();
-                setInterval(exibirAlertasEstoque, 5 * 60 * 1000);
+                } catch (error) {
+                    console.error("Erro ao verificar alertas de estoque:", error);
+                }
             }
         });
     </script>
-</body>
-</html>

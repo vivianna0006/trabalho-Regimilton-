@@ -34,6 +34,11 @@
     background-color: #e74c3c; /* Define a cor de fundo como vermelho para indicar erro. */
 } /* Fecha o bloco de estilos para .toast.error. */
 
+.toast.warning { /* Estiliza uma notificação de alerta/atenção. */
+    background-color: #f59e0b; /* Amarelo para chamar atenção sem ser erro. */
+    color: #1f2937;
+}
+
 
 /* O comentário abaixo descreve a animação que será definida. */
 @keyframes fadeInOut { /* Define uma animação chamada 'fadeInOut' com vários estágios. */

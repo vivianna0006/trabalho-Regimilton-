@@ -29,6 +29,9 @@ const writeData = (filePath, data) => { fs.writeFileSync(filePath, JSON.stringif
 const normalizeText = (v) => typeof v === 'string' ? v.trim() : '';
 const lowercaseText = (v) => normalizeText(v).toLowerCase();
 const digitsOnly = (v) => normalizeText(v).replace(/[^0-9]/g, '');
+const stripAccents = (v) => {
+  try { return normalizeText(v).normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (_) { return normalizeText(v); }
+};
 
 const MIN_USERNAME_LENGTH = 3;
 const MIN_PASSWORD_LENGTH = 6;
@@ -42,10 +45,11 @@ const isStrongPassword = (pwd) => {
 // (helpers removidos por solicita??o de revers?o)
 
 const canonicalCargo = (value) => {
-  const n = lowercaseText(value);
+  const n = stripAccents(lowercaseText(value)).replace(/[^a-z]/g, '');
   if (!n) return '';
   if (['administrador', 'gerente'].includes(n)) return 'Administrador';
-  if (['funcionario', 'funcionarios', 'colaborador', 'colaboradores'].includes(n)) return 'Funcionario';
+  const funcionarios = new Set(['funcionario', 'funcionarios', 'funcionrio', 'funcionrios', 'colaborador', 'colaboradores', 'atendente', 'vendedor', 'caixa']);
+  if (funcionarios.has(n)) return 'Funcionario';
   return '';
 };
 
@@ -180,9 +184,9 @@ const mergeSuprimentos = (transactionsOverride) => {
 };
 const registrarSuprimento = ({ amount, user, description, date }) => {
   const valor = Math.abs(safeNumber(amount));
-  if (!valor) throw new Error('O valor do suprimento ? inv?lido.');
+  if (!valor) throw new Error('O valor do suprimento é inválido.');
   const usuario = normalizeText(user || '');
-  if (!usuario) throw new Error('Usu?rio do suprimento n?o informado.');
+  if (!usuario) throw new Error('Usuário do suprimento não informado.');
   const parsedDate = date ? new Date(date) : new Date();
   const agora = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
   const entrada = {
@@ -224,7 +228,7 @@ const readSuprimentos = (transactionsOverride) => mergeSuprimentos(transactionsO
 
 async function calcularResumoDia(targetDate) {
   const dia = toDayKey(targetDate || new Date());
-  if (!dia) throw new Error('Data invalida para resumo.');
+  if (!dia) throw new Error('Data inválida para resumo.');
 
   const sales = readData(SALES_DB_FILE) || [];
   const transactions = readData(TRANSACTIONS_DB_FILE) || [];
@@ -331,7 +335,7 @@ app.get('/api/users/usernames', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
 
     const users = readData(USERS_DB_PATH) || [];
     const usernames = users
@@ -340,7 +344,7 @@ app.get('/api/users/usernames', (req, res) => {
       .sort((a, b) => String(a).localeCompare(String(b), 'pt-BR'));
     res.status(200).json(usernames);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao listar usu?rios.' });
+    res.status(500).json({ message: 'Erro ao listar usuários.' });
   }
 });
 
@@ -425,7 +429,7 @@ app.get('/api/history/sales-all', (req, res) => {
 
     res.status(200).json(sorted);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao ler hist?rico de vendas.' });
+    res.status(500).json({ message: 'Erro ao ler histórico de vendas.' });
   }
 });
 
@@ -460,44 +464,44 @@ app.post('/api/register', async (req, res) => {
     const telefoneDigits = digitsOnly(body.telefone || body.phone || body.telefoneCelular);
 
     if (!rawUsername || rawUsername.length < MIN_USERNAME_LENGTH)
-      return res.status(400).json({ message: `Informe um usuario com pelo menos ${MIN_USERNAME_LENGTH} caracteres.` });
+      return res.status(400).json({ message: `Informe um usuário com pelo menos ${MIN_USERNAME_LENGTH} caracteres.` });
     if (!passwordRaw || passwordRaw.length < MIN_PASSWORD_LENGTH)
       return res.status(400).json({ message: `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` });
     if (!isStrongPassword(passwordRaw))
-      return res.status(400).json({ message: 'A senha deve usar apenas letras e/ou numeros (sem simbolos) e ter ate 64 caracteres.' });
+      return res.status(400).json({ message: 'A senha deve usar apenas letras e/ou números (sem simbolos) e ter ate 64 caracteres.' });
 
     const users = readData(USERS_DB_PATH);
     const isFirstUser = users.length === 0;
-    const cargoBase = isFirstUser ? 'Administrador' : (desiredCargo || 'Funcionario');
+    const cargoBase = isFirstUser ? 'Administrador' : (desiredCargo || 'Funcionário');
     const cargoNorm = canonicalCargo(cargoBase);
-    if (!cargoNorm) return res.status(400).json({ message: 'Cargo invalido. Use Administrador ou Funcionario.' });
+    if (!cargoNorm) return res.status(400).json({ message: 'Cargo inválido. Use Administrador ou Funcionário.' });
 
-    if (!nomeCompleto || nomeCompleto.length < 3) return res.status(400).json({ message: 'Informe o nome completo do funcionario.' });
+    if (!nomeCompleto || nomeCompleto.length < 3) return res.status(400).json({ message: 'Informe o nome completo do funcionário.' });
 
     if (!isFirstUser) {
-      if (!cpfDigits) return res.status(400).json({ message: 'Informe o CPF do funcionario.' });
-      if (!email) return res.status(400).json({ message: 'Informe o email do funcionario.' });
-      if (!telefoneDigits) return res.status(400).json({ message: 'Informe o telefone do funcionario.' });
-      if (!isValidEmail(email)) return res.status(400).json({ message: 'Email invalido.' });
-      if (!isValidPhone(telefoneDigits)) return res.status(400).json({ message: 'Telefone invalido.' });
+      if (!cpfDigits) return res.status(400).json({ message: 'Informe o CPF do funcionário.' });
+      if (!email) return res.status(400).json({ message: 'Informe o email do funcionário.' });
+      if (!telefoneDigits) return res.status(400).json({ message: 'Informe o telefone do funcionário.' });
+      if (!isValidEmail(email)) return res.status(400).json({ message: 'Email inválido.' });
+      if (!isValidPhone(telefoneDigits)) return res.status(400).json({ message: 'Telefone inválido.' });
     }
 
     if (!isFirstUser && cargoNorm === 'Funcionario') rawUsername = cpfDigits;
     if (!isFirstUser && !isValidCPF(cpfDigits)) {
-      return res.status(400).json({ message: 'CPF invalido.' });
+      return res.status(400).json({ message: 'CPF inválido.' });
     }
-    if (!rawUsername) return res.status(400).json({ message: 'Usuario invalido.' });
+    if (!rawUsername) return res.status(400).json({ message: 'Usuario inválido.' });
 
     const existingUsername = users.find(u => typeof u.username === 'string' && u.username.toLowerCase() === rawUsername.toLowerCase());
-    if (existingUsername) return res.status(409).json({ message: 'Este nome de usuario ja esta em uso.' });
-    if (cpfDigits && users.some(u => u.cpf && digitsOnly(u.cpf) === cpfDigits)) return res.status(409).json({ message: 'Ja existe um funcionario com este CPF.' });
-    if (email && users.some(u => typeof u.email === 'string' && u.email.toLowerCase() === email)) return res.status(409).json({ message: 'Ja existe um funcionario com este email.' });
+    if (existingUsername) return res.status(409).json({ message: 'Este nome de usuário ja esta em uso.' });
+    if (cpfDigits && users.some(u => u.cpf && digitsOnly(u.cpf) === cpfDigits)) return res.status(409).json({ message: 'Já existe um funcionário com este CPF.' });
+    if (email && users.some(u => typeof u.email === 'string' && u.email.toLowerCase() === email)) return res.status(409).json({ message: 'Já existe um funcionário com este email.' });
 
     if (!isFirstUser) {
       const authToken = req.header('x-auth-token');
       const session = authToken ? activeSessions.get(authToken) : null;
       const isAdminSession = session && canonicalCargo(session.cargo) === 'Administrador';
-      if (!isAdminSession) return res.status(403).json({ message: 'Apenas administradores autenticados podem cadastrar usuarios.' });
+      if (!isAdminSession) return res.status(403).json({ message: 'Apenas administradores autenticados podem cadastrar usuários.' });
     }
 
     const hashedPassword = await bcrypt.hash(passwordRaw, 10);
@@ -516,7 +520,7 @@ app.post('/api/register', async (req, res) => {
     users.push(newUser);
     writeData(USERS_DB_PATH, users);
     return res.status(201).json({
-      message: 'Funcionario cadastrado com sucesso!', user: {
+      message: 'Funcionário cadastrado com sucesso!', user: {
         username: newUser.username,
         cargo: newUser.cargo,
         nomeCompleto: newUser.nomeCompleto,
@@ -542,15 +546,15 @@ app.post('/api/login', async (req, res) => {
     if (!user && inputDigits.length === 11) {
       user = users.find(u => u && u.cpf && digitsOnly(u.cpf) === inputDigits);
     }
-    if (!user) return res.status(401).json({ success: false, message: 'Usu?rio ou senha inv?lidos.' });
+    if (!user) return res.status(401).json({ success: false, message: 'Usuário ou senha inválidos.' });
 
     if (canonicalCargo(user.cargo) === 'Funcionario') {
       if (inputDigits.length !== 11 || digitsOnly(user.cpf || '') !== inputDigits)
-        return res.status(401).json({ success: false, message: 'Para funcion?rio, utilize o CPF como usu?rio.' });
+        return res.status(401).json({ success: false, message: 'Para funcionário, utilize o CPF como usuário.' });
     }
 
     if (!inputPassword || !(await bcrypt.compare(inputPassword, user.password)))
-      return res.status(401).json({ success: false, message: 'Usu?rio ou senha inv?lidos.' });
+      return res.status(401).json({ success: false, message: 'Usuário ou senha inválidos.' });
 
     for (const [tokenValue, sess] of activeSessions.entries()) {
       if (sess.username === user.username) activeSessions.delete(tokenValue);
@@ -584,7 +588,7 @@ app.get('/api/history/sales', async (req, res) => {
     }
     res.json(sales.reverse()); // Retorna as mais recentes primeiro
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar hist?rico de vendas." });
+    res.status(500).json({ message: "Erro ao buscar histórico de vendas." });
   }
 });
 
@@ -602,7 +606,7 @@ app.get('/api/history/sangrias', async (req, res) => {
     }
     res.json(transactions.reverse());
   } catch (error) {
-    res.status(500).json({ message: "Erro ao buscar hist?rico de sangrias." });
+    res.status(500).json({ message: "Erro ao buscar histórico de sangrias." });
   }
 });
 
@@ -684,11 +688,11 @@ app.get('/api/history/devolucoes', (req, res) => {
 
     res.status(200).json(filtered);
   } catch (e) {
-    res.status(500).json({ message: 'Erro ao buscar hist?rico de devolu??es.' });
+    res.status(500).json({ message: 'Erro ao buscar histórico de devolulções.' });
   }
 });
 
-// Rota para buscar o histrico de suprimentos com filtros
+
 
 
 // Rota para apagar uma venda inteira
@@ -700,7 +704,7 @@ app.delete('/api/history/sales/:id', async (req, res) => {
     sales = sales.filter(sale => sale.id !== saleId);
 
     if (sales.length === initialLength) {
-      return res.status(404).json({ message: "Venda n?o encontrada." });
+      return res.status(404).json({ message: "Venda não encontrada." });
     }
 
     await writeSales(sales);
@@ -742,9 +746,9 @@ app.post('/api/devolucao', async (req, res) => {
     // 3. Atualizar o estoque (opcional, mas recomendado)
     // Esta parte pode ser adicionada depois para aumentar a quantidade em estoque
 
-    res.status(201).json({ success: true, message: 'Devolu??o registada com sucesso!' });
+    res.status(201).json({ success: true, message: 'Devolução registada com sucesso!' });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao processar devolu??o.' });
+    res.status(500).json({ message: 'Erro ao processar devolução.' });
   }
 });
 
@@ -753,8 +757,8 @@ app.get('/api/users', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar funcionarios.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar funcionários.' });
 
     const { search = '', cargo } = req.query || {};
     const normalizedSearch = lowercaseText(search);
@@ -789,15 +793,15 @@ app.get('/api/users', (req, res) => {
       try {
         const authToken = req.header('x-auth-token');
         const session = authToken ? activeSessions.get(authToken) : null;
-        if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcion?rios.' });
+        if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem editar funcionários.' });
 
         const targetUsername = String(req.params.username || '').trim();
-        if (!targetUsername) return res.status(400).json({ message: 'Usu?rio alvo inv?lido.' });
+        if (!targetUsername) return res.status(400).json({ message: 'Usuário alvo inválido.' });
 
         const users = readData(USERS_DB_PATH);
         const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-        if (idx === -1) return res.status(404).json({ message: 'Funcion?rio n?o encontrado.' });
+        if (idx === -1) return res.status(404).json({ message: 'Funcionário não encontrado.' });
 
         const body = req.body || {};
         const updates = {};
@@ -807,14 +811,14 @@ app.get('/api/users', (req, res) => {
         if (typeof body.cpf === 'string') updates.cpf = digitsOnly(body.cpf);
         if (typeof body.cargo === 'string') updates.cargo = canonicalCargo(body.cargo) || users[idx].cargo;
 
-        if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inv?lido.' });
-        if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inv?lido.' });
+        if (updates.email && !isValidEmail(updates.email)) return res.status(400).json({ message: 'Email inválido.' });
+        if (updates.telefone && !isValidPhone(updates.telefone)) return res.status(400).json({ message: 'Telefone inválido.' });
         if (updates.cpf && updates.cpf.length && updates.cpf !== (digitsOnly(users[idx].cpf || ''))) {
-          if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inv?lido.' });
-          if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'J? existe um funcion?rio com este CPF.' });
+          if (!isValidCPF(updates.cpf)) return res.status(400).json({ message: 'CPF inválido.' });
+          if (users.some((u, i) => i !== idx && u.cpf && digitsOnly(u.cpf) === updates.cpf)) return res.status(409).json({ message: 'Já existe um funcionário com este CPF.' });
         }
         if (updates.email && updates.email !== lowercaseText(users[idx].email || '')) {
-          if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'J? existe um funcion?rio com este email.' });
+          if (users.some((u, i) => i !== idx && typeof u.email === 'string' && lowercaseText(u.email) === updates.email)) return res.status(409).json({ message: 'Já existe um funcionário com este email.' });
         }
 
         if (typeof body.password === 'string' && body.password.trim()) {
@@ -829,11 +833,11 @@ app.get('/api/users', (req, res) => {
 
         const u = users[idx];
         return res.status(200).json({
-          message: 'Funcion?rio atualizado com sucesso!',
+          message: 'Funcionário atualizado com sucesso!',
           user: { username: u.username, cargo: u.cargo, nomeCompleto: u.nomeCompleto, cpf: u.cpf, email: u.email, telefone: u.telefone, updatedAt: u.updatedAt }
         });
       } catch (e) {
-        res.status(500).json({ message: 'Erro ao atualizar funcion?rio.' });
+        res.status(500).json({ message: 'Erro ao atualizar funcionário.' });
       }
     });
 
@@ -842,21 +846,21 @@ app.get('/api/users', (req, res) => {
       try {
         const authToken = req.header('x-auth-token');
         const session = authToken ? activeSessions.get(authToken) : null;
-        if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcion?rios.' });
+        if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+        if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir funcionários.' });
 
         const targetUsername = String(req.params.username || '').trim();
-        if (!targetUsername) return res.status(400).json({ message: 'Usu?rio alvo inv?lido.' });
+        if (!targetUsername) return res.status(400).json({ message: 'Usuário alvo inválido.' });
 
         const users = readData(USERS_DB_PATH);
         const idx = users.findIndex(u => typeof u.username === 'string' && u.username.toLowerCase() === targetUsername.toLowerCase());
-        if (idx === -1) return res.status(404).json({ message: 'Funcion?rio n?o encontrado.' });
+        if (idx === -1) return res.status(404).json({ message: 'Funcionário não encontrado.' });
 
         // Evitar excluir o ?ltimo administrador
         const isAdmin = canonicalCargo(users[idx].cargo) === 'Administrador';
         if (isAdmin) {
           const adminCount = users.filter(u => canonicalCargo(u.cargo) === 'Administrador').length;
-          if (adminCount <= 1) return res.status(400).json({ message: 'N?o ? poss?vel excluir o ?ltimo administrador.' });
+          if (adminCount <= 1) return res.status(400).json({ message: 'Não é possível excluir o último administrador.' });
         }
 
         const removed = users.splice(idx, 1)[0];
@@ -867,9 +871,9 @@ app.get('/api/users', (req, res) => {
             activeSessions.delete(tokenValue);
           }
         }
-        return res.status(200).json({ success: true, message: 'Funcion?rio exclu?do com sucesso.' });
+        return res.status(200).json({ success: true, message: 'Funcionário excluído com sucesso.' });
       } catch (e) {
-        res.status(500).json({ message: 'Erro ao excluir funcion?rio.' });
+        res.status(500).json({ message: 'Erro ao excluir funcionário.' });
       }
     });
     res.status(200).json({ total: entries.length, results: filtered });
@@ -907,7 +911,7 @@ app.get('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const prod = produtos.find(p => p.id === id);
-    if (!prod) return res.status(404).json({ message: 'Produto n?o encontrado.' });
+    if (!prod) return res.status(404).json({ message: 'Produto não encontrado.' });
     res.status(200).json(prod);
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao buscar produto.' });
@@ -918,8 +922,8 @@ app.post('/api/produtos', (req, res) => {
   try {
     const novo = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
-    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inv?lido.' });
-    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'J? existe um produto com este ID.' });
+    if (!novo || !novo.id) return res.status(400).json({ message: 'Produto inválido.' });
+    if (produtos.some(p => p.id === novo.id)) return res.status(409).json({ message: 'Já existe um produto com este ID.' });
     produtos.push(novo);
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(201).json({ message: 'Produto adicionado com sucesso.' });
@@ -934,7 +938,7 @@ app.put('/api/produtos/:id', (req, res) => {
     const body = req.body || {};
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto n?o encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto não encontrado.' });
     produtos[idx] = { ...produtos[idx], ...body, id };
     writeData(PRODUCTS_DB_FILE, produtos);
     res.status(200).json({ message: 'Produto atualizado com sucesso.' });
@@ -948,10 +952,10 @@ app.delete('/api/produtos/:id', (req, res) => {
     const { id } = req.params;
     const produtos = readData(PRODUCTS_DB_FILE);
     const idx = produtos.findIndex(p => p.id === id);
-    if (idx < 0) return res.status(404).json({ message: 'Produto n?o encontrado.' });
+    if (idx < 0) return res.status(404).json({ message: 'Produto não encontrado.' });
     produtos.splice(idx, 1);
     writeData(PRODUCTS_DB_FILE, produtos);
-    res.status(200).json({ message: 'Produto exclu?do com sucesso.' });
+    res.status(200).json({ message: 'Produto excluído com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir produto.' });
   }
@@ -997,8 +1001,8 @@ app.get('/api/sales', (req, res) => {
     try { normalizeSalesFile(); } catch (_) { }
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o histórico de vendas.' });
 
     const sales = readData(SALES_DB_FILE) || [];
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
@@ -1073,8 +1077,8 @@ app.get('/api/sales/summary', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de vendas.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o histórico de vendas.' });
 
     const parseDate = (v) => { if (!v) return null; const d = new Date(v); return isNaN(d.getTime()) ? null : d; };
     const { from, to, seller = '', search = '', productId: productIdStr } = req.query || {};
@@ -1145,16 +1149,16 @@ app.delete('/api/sales/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda n?o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda não encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda exclu?da com sucesso.' });
+    return res.status(200).json({ message: 'Venda excluída com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -1165,16 +1169,16 @@ app.post('/api/sales/:id/delete', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir vendas.' });
 
     const { id } = req.params;
     const sales = readData(SALES_DB_FILE) || [];
     const idx = sales.findIndex(s => String(s.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Venda n?o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Venda não encontrada.' });
     sales.splice(idx, 1);
     writeData(SALES_DB_FILE, sales);
-    return res.status(200).json({ message: 'Venda exclu?da com sucesso.' });
+    return res.status(200).json({ message: 'Venda excluída com sucesso.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir venda.' });
   }
@@ -1185,14 +1189,14 @@ app.patch('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda n?o encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda não encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -1226,14 +1230,14 @@ app.post('/api/sales/:id/items/remove', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem alterar vendas.' });
 
     const { id } = req.params;
     const { indices, productIds } = req.body || {};
     const sales = readData(SALES_DB_FILE) || [];
     const sale = sales.find(s => String(s.id || '') === String(id || ''));
-    if (!sale) return res.status(404).json({ message: 'Venda n?o encontrada.' });
+    if (!sale) return res.status(404).json({ message: 'Venda não encontrada.' });
     const items = Array.isArray(sale.items) ? sale.items : [];
 
     let removedCount = 0;
@@ -1267,11 +1271,11 @@ app.post('/api/refunds', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devolu??es.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem registrar devoluções.' });
 
     const { saleId, amount, user, reason, items } = req.body || {};
-    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolu??o inv?lido.' });
+    if (!amount || Number(amount) <= 0 || !user) return res.status(400).json({ message: 'Valor da devolução inválido.' });
 
     const devolucoes = readDevolucoes() || [];
     const entry = {
@@ -1315,9 +1319,9 @@ app.post('/api/refunds', (req, res) => {
       }
     } catch (_) { }
 
-    res.status(201).json({ message: 'Devolu??o registrada com sucesso!', refund: entry });
+    res.status(201).json({ message: 'Devolução registrada com sucesso!', refund: entry });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao registrar devolu??o.' });
+    res.status(500).json({ message: 'Erro interno ao registrar devolução.' });
   }
 });
 
@@ -1326,18 +1330,18 @@ app.delete('/api/refunds/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devolu??es.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir devoluções.' });
 
     const { id } = req.params;
     const devolucoes = readDevolucoes() || [];
     const idx = devolucoes.findIndex(r => String(r.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Devolu??o n?o encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Devolução não encontrada.' });
     devolucoes.splice(idx, 1);
     writeDevolucoes(devolucoes);
-    return res.status(200).json({ message: 'Devolu??o exclu?da com sucesso.' });
+    return res.status(200).json({ message: 'Devolução exclída com sucesso.' });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao excluir devolu??o.' });
+    res.status(500).json({ message: 'Erro interno ao excluir devolução.' });
   }
 });
 
@@ -1345,7 +1349,7 @@ app.delete('/api/refunds/:id', (req, res) => {
 app.post('/api/sangria', (req, res) => {
   try {
     const { amount, user, reason } = req.body || {};
-    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria ? inv?lido.' });
+    if (!amount || amount <= 0 || !user) return res.status(400).json({ message: 'O valor da sangria é inválido.' });
     const transactions = readData(TRANSACTIONS_DB_FILE);
     transactions.push({ id: Date.now(), type: 'sangria', amount, user, date: new Date().toISOString(), reason: reason || null });
     writeData(TRANSACTIONS_DB_FILE, transactions);
@@ -1370,7 +1374,7 @@ const handleSuprimentoRegistro = (req, res) => {
     res.status(201).json({ message: 'Suprimento registrado com sucesso!', suprimento });
   } catch (e) {
     const msg = e && e.message ? e.message : 'Erro interno ao registrar o suprimento.';
-    const status = msg.toLowerCase().includes('inv?lido') || msg.toLowerCase().includes('informado') ? 400 : 500;
+    const status = msg.toLowerCase().includes('inválido') || msg.toLowerCase().includes('informado') ? 400 : 500;
     res.status(status).json({ message: msg });
   }
 };
@@ -1381,8 +1385,8 @@ app.get('/api/transactions', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o hist?rico de caixa.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar o históico de caixa.' });
 
     const { type = '', from, to, user = '', search = '', id: idStr, productId: productIdStr, sort: sortKey, page: pageStr, pageSize: pageSizeStr } = req.query || {};
     const typeNorm = lowercaseText(type);
@@ -1407,7 +1411,7 @@ app.get('/api/transactions', (req, res) => {
         if (toDate && date > toDate) return false;
         if (userNorm && !lowercaseText(t.user || '').includes(userNorm)) return false;
         if (prodIdFilter) {
-          if (lowercaseText(t.type) !== 'devolucao') return false;
+          if (lowercaseText(t.type) !== 'devolução') return false;
           const items = Array.isArray(t.items) ? t.items : [];
           const needle = lowercaseText(prodIdFilter);
           const hasProd = items.some((it) => lowercaseText(String(it.productId || it.id || it.codigo || '')).includes(needle));
@@ -1465,7 +1469,7 @@ app.get('/api/transactions', (req, res) => {
 
     res.status(200).json({ total, page, pageSize: sizeNum, totalPages, results: paged });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao consultar transa??es.' });
+    res.status(500).json({ message: 'Erro interno ao consultar transações.' });
   }
 });
 
@@ -1474,19 +1478,19 @@ app.delete('/api/transactions/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
-    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir transacoes.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
+    if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir transações.' });
 
     const { id } = req.params;
     const all = readData(TRANSACTIONS_DB_FILE) || [];
     const idx = all.findIndex(t => String(t.id || '') === String(id || ''));
-    if (idx < 0) return res.status(404).json({ message: 'Transacao nao encontrada.' });
+    if (idx < 0) return res.status(404).json({ message: 'Transação nao encontrada.' });
     const removida = all.splice(idx, 1)[0];
     writeData(TRANSACTIONS_DB_FILE, all);
     if (lowercaseText(removida?.type) === 'suprimento') removeSuprimentoDaBase(removida);
-    return res.status(200).json({ message: 'Transacao excluida com sucesso.' });
+    return res.status(200).json({ message: 'Transação excluída com sucesso.' });
   } catch (e) {
-    res.status(500).json({ message: 'Erro interno ao excluir transacao.' });
+    res.status(500).json({ message: 'Erro interno ao excluir transação.' });
   }
 });
 
@@ -1514,13 +1518,13 @@ app.get(resumoRoutes, async (req, res) => {
 app.post(fechamentoRoutes, async (req, res) => {
   try {
     const session = getSession(req);
-    if (!session) return res.status(401).json({ message: 'Token de acesso inv?lido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     const cargo = canonicalCargo(session.cargo);
-    if (!['Administrador', 'Funcionario'].includes(cargo)) return res.status(403).json({ message: 'Apenas administradores ou funcionarios podem fechar o caixa.' });
+    if (!['Administrador', 'Funcionario'].includes(cargo)) return res.status(403).json({ message: 'Apenas administradores ou funcionários podem fechar o caixa.' });
 
     const body = req.body || {};
     const dia = toDayKey(body.data || new Date());
-    if (!dia) return res.status(400).json({ message: 'Data do fechamento inv?lida.' });
+    if (!dia) return res.status(400).json({ message: 'Data do fechamento inválida.' });
 
     const resumo = await calcularResumoDia(dia);
     const dinheiroContado = safeNumber(body.dinheiroContado);
@@ -1542,7 +1546,7 @@ app.post(fechamentoRoutes, async (req, res) => {
       ? 'Faltou'
       : (sobraDinheiro || sobraCartao)
         ? 'Sobrando'
-        : (Math.abs(difGeral) <= DIF_TOLERANCIA ? 'Bateu' : (difGeral < 0 ? 'Faltou' : 'Sobrando')) ;
+        : (Math.abs(difGeral) <= DIF_TOLERANCIA ? 'Bateu' : (difGeral < 0 ? 'Faltou' : 'Sobrando'));
 
     const novoRegistro = {
       id: Date.now(),
@@ -1567,7 +1571,7 @@ app.post(fechamentoRoutes, async (req, res) => {
 app.get('/api/history/fechamentos', (req, res) => {
   try {
     const session = getSession(req);
-    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem consultar fechamentos.' });
 
     const { dia = '', user = '', from = '', to = '' } = req.query || {};
@@ -1597,7 +1601,7 @@ app.delete('/api/suprimentos/:id', (req, res) => {
   try {
     const authToken = req.header('x-auth-token');
     const session = authToken ? activeSessions.get(authToken) : null;
-    if (!session) return res.status(401).json({ message: 'Token de acesso invalido ou expirado.' });
+    if (!session) return res.status(401).json({ message: 'Token de acesso inválido ou expirado.' });
     if (canonicalCargo(session.cargo) !== 'Administrador') return res.status(403).json({ message: 'Apenas administradores podem excluir suprimentos.' });
 
     const { id } = req.params;
@@ -1611,7 +1615,7 @@ app.delete('/api/suprimentos/:id', (req, res) => {
 
     const removeuSup = removerSuprimentoPorId(idStr);
     if (removeuSup || removeuTx) return res.status(200).json({ message: 'Suprimento removido com sucesso.' });
-    return res.status(404).json({ message: 'Suprimento nao encontrado.' });
+    return res.status(404).json({ message: 'Suprimento não encontrado.' });
   } catch (e) {
     res.status(500).json({ message: 'Erro interno ao excluir suprimento.' });
   }
@@ -1656,6 +1660,12 @@ app.get('/api/suprimentos', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor Styllo Fashion ouvindo em http://localhost:${PORT}`);
 });
+
+
+
+
+
+
 
 
 

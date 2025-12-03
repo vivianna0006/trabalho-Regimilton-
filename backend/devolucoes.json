@@ -1,50 +1,18 @@
 [
   {
-    "id": 1764639270191,
-    "amount": 70,
+    "id": 1764699444376,
+    "amount": 20,
     "user": "anninhatwice9",
-    "date": "2025-12-02T01:34:30.191Z",
-    "saleId": "1764638730547",
+    "date": "2025-12-02T18:17:24.376Z",
+    "saleId": "1764699347156",
     "items": [
       {
-        "productId": "001",
-        "productName": "Blusa cinza",
+        "productId": "001-OC",
+        "productName": "óculos coração",
         "quantity": 1,
-        "amount": 70
+        "amount": 20
       }
     ],
-    "reason": "bunda"
-  },
-  {
-    "id": 1764639278197,
-    "amount": 70,
-    "user": "anninhatwice9",
-    "date": "2025-12-02T01:34:38.197Z",
-    "saleId": "1764638691399",
-    "items": [
-      {
-        "productId": "001",
-        "productName": "Blusa cinza",
-        "quantity": 1,
-        "amount": 70
-      }
-    ],
-    "reason": "bunda"
-  },
-  {
-    "id": 1764681088469,
-    "amount": 70,
-    "user": "anninhatwice9",
-    "date": "2025-12-02T13:11:28.469Z",
-    "saleId": "1764638557348",
-    "items": [
-      {
-        "productId": "001",
-        "productName": "Blusa cinza",
-        "quantity": 1,
-        "amount": 70
-      }
-    ],
-    "reason": "llll"
+    "reason": "jwhsbjd"
   }
 ]

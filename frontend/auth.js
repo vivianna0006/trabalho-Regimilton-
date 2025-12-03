@@ -36,6 +36,11 @@
     const isAdministrador = cargoNormalizado === 'administrador';
 
     const paginaAtual = window.location.pathname.split('/').pop();
+    // Bloqueia relatorios para não administradores, mesmo por acesso direto
+    if (paginaAtual === 'relatorios.html' && !isAdministrador) {
+        window.location.href = './menu.html';
+        return;
+    }
     let currentPageParent = '';
 
     // Descobre qual menu deve ficar destacado (active)
@@ -78,9 +83,11 @@
         }
     });
 
-    // Adiciona Relatórios e Sair
+    // Adiciona Relatórios apenas para administradores + Sair
+    if (isAdministrador) {
+        menuHTML += `<li><a href="relatorios.html" id="relatorios-link" class="menu-link">Relatórios</a></li>`;
+    }
     menuHTML += `
-    <li><a href="relatorios.html" id="relatorios-link" class="menu-link">Relatórios</a></li>
     </ul>
     <button id="logout-btn-menu" type="button">Sair</button>
     </div>`;

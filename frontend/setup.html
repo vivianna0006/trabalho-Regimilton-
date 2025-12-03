@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,16 +9,61 @@
   <link rel="stylesheet" href="componentes.css">
   <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="login.css">
-  <link rel="stylesheet" href="menu.css">`n</head>
+  <link rel="stylesheet" href="menu.css">
+</head>
+
 <body>
-  <main class="main-content login-hero"><section class="login-grid"><div class="login-brand"><a href="#" class="brand-name">Styllo Fashion Modas</a><h2>Configuração Inicial</h2><p>Cadastre o primeiro gerente para iniciar o sistema.</p></div><div class="form-box login-card"><header class="form-header"><h1>Configuração Inicial</h1><p class="intro-p">Informe os dados do gerente administrador.</p></header><form id="setup-form" novalidate><div class="input-group"><label for="setup-username">Nome do Gerente</label><input type="text" id="setup-username" autocomplete="username" required><span class="input-feedback" id="feedback-setup-username"></span></div><div class="input-group"><label for="setup-password">Senha</label><div class="input-wrapper"><input type="password" id="setup-password" autocomplete="new-password" required><button type="button" class="eye-toggle closed" data-target="setup-password" aria-label="Mostrar senha" title="Mostrar senha"><svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg><svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/><path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button></div><small class="input-hint">Mínimo de 6 caracteres. Utilize letras e números.</small><span class="input-feedback" id="feedback-setup-password"></span></div><button class="btn-primary" type="submit">Criar Gerente e Iniciar</button></form></div></section></main>
+  <main class="main-content login-hero">
+    <section class="login-grid">
+      <div class="login-brand">
+        <a href="#" class="brand-name">Styllo Fashion Modas</a>
+        <h2>Configuração Inicial</h2>
+        <p>Cadastre o primeiro gerente para iniciar o sistema.</p>
+      </div>
+      <div class="form-box login-card">
+        <header class="form-header">
+          <h1>Configuração Inicial</h1>
+          <p class="intro-p">Informe os dados do gerente administrador.</p>
+        </header>
+        <form id="setup-form" novalidate>
+          <div class="input-group">
+            <label for="setup-username">Nome do Gerente</label>
+            <input type="text" id="setup-username" autocomplete="username" required>
+            <span class="input-feedback" id="feedback-setup-username"></span>
+          </div>
+          <div class="input-group">
+            <label for="setup-password">Senha</label>
+            <div class="input-wrapper">
+              <input type="password" id="setup-password" autocomplete="new-password" required>
+              <button type="button" class="eye-toggle closed" data-target="setup-password" aria-label="Mostrar senha"
+                title="Mostrar senha">
+                <svg class="icon-open" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                </svg>
+                <svg class="icon-closed" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                  <path d="M4 4L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none" />
+                </svg>
+              </button>
+            </div>
+            <small class="input-hint">Mínimo de 6 caracteres. Utilize letras e números.</small>
+            <span class="input-feedback" id="feedback-setup-password"></span>
+          </div>
+          <button class="btn-primary" type="submit">Criar Gerente e Iniciar</button>
+        </form>
+      </div>
+    </section>
+  </main>
 
   <script src="api-client.js"></script>
   <script src="notifications.js"></script>
   <script>
-    (function() {
+    (function () {
       document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.eye-toggle').forEach(function(btn){
+        document.querySelectorAll('.eye-toggle').forEach(function (btn) {
           var targetId = btn.getAttribute('data-target');
           var target = document.getElementById(targetId);
           if (!target) return;
@@ -26,7 +72,7 @@
             else { target.type = 'password'; btn.classList.remove('open'); btn.classList.add('closed'); btn.setAttribute('aria-label', 'Mostrar senha'); btn.title = 'Mostrar senha'; }
           }
           setOpen(btn.classList.contains('open'));
-          btn.addEventListener('click', function(){ setOpen(!btn.classList.contains('open')); });
+          btn.addEventListener('click', function () { setOpen(!btn.classList.contains('open')); });
         });
       });
     })();
@@ -34,10 +80,11 @@
     document.addEventListener('DOMContentLoaded', () => {
       const setupForm = document.getElementById('setup-form');
       let listenerAttached = false;
-      const parseJson = async (response) => { if (!response) return {}; const contentType = response.headers?.get('content-type') || ''; if (!contentType.includes('application/json')) return {}; try { return await response.json(); } catch(_) { return {}; } };
-      const setToast = (text, type = '') => { try { showToast(text, type === 'error' ? 'error' : 'success'); } catch (_) {} };
+      const parseJson = async (response) => { if (!response) return {}; const contentType = response.headers?.get('content-type') || ''; if (!contentType.includes('application/json')) return {}; try { return await response.json(); } catch (_) { return {}; } };
+      const setToast = (text, type = '') => { try { showToast(text, type === 'error' ? 'error' : 'success'); } catch (_) { } };
       const setError = (input, msg) => { const group = input ? input.closest('.input-group') : null; if (group) group.classList.add('error'); const fb = group ? group.querySelector('.input-feedback') : null; if (fb) fb.textContent = msg || ''; };
       const clearError = (input) => { const group = input ? input.closest('.input-group') : null; if (group) group.classList.remove('error'); const fb = group ? group.querySelector('.input-feedback') : null; if (fb) fb.textContent = ''; };
+
       const attachSetupFormListener = () => {
         if (listenerAttached || !setupForm) return; listenerAttached = true;
         setupForm.addEventListener('submit', async (event) => {
@@ -46,33 +93,69 @@
           const passwordInput = document.getElementById('setup-password');
           const username = usernameInput?.value.trim();
           const password = passwordInput?.value;
+
           [usernameInput, passwordInput].forEach(clearError);
+
           let hasError = false;
           if (!username) { setError(usernameInput, 'Informe o nome do gerente.'); hasError = true; }
           if (!password || password.length < 6) { setError(passwordInput, 'Informe uma senha com pelo menos 6 caracteres.'); hasError = true; }
+
           if (hasError) { setToast('Preencha corretamente os campos.', 'error'); return; }
+
           setToast('Criando gerente...');
+
           try {
-            const response = await ApiClient.fetch('/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, cargo: 'Administrador' }) });
+            // CORREÇÃO AQUI: Enviamos "nomeCompleto" igual ao "username" para satisfazer o backend
+            const payload = {
+              username,
+              password,
+              nomeCompleto: username, // Adicionado para corrigir o erro
+              cargo: 'Administrador'
+            };
+
+            const response = await ApiClient.fetch('/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
             const data = await parseJson(response);
             if (!response.ok) throw new Error(data.message || 'Não foi possível concluir o cadastro.');
+
             setToast('Gerente criado com sucesso! Redirecionando para a página de login...');
             setTimeout(() => { window.location.replace('index.html'); }, 1800);
           } catch (error) {
             setToast(error.message || 'Não foi possível conectar ao servidor.', 'error');
           }
         });
+
         const usernameInput = document.getElementById('setup-username');
         const passwordInput = document.getElementById('setup-password');
         if (usernameInput) usernameInput.addEventListener('input', () => clearError(usernameInput));
         if (passwordInput) passwordInput.addEventListener('input', () => clearError(passwordInput));
       };
+
       const checkStatusAndSetup = async () => {
-        try { const response = await ApiClient.fetch('/status', { cache: 'no-store' }); const data = await parseJson(response); if (!response.ok) throw new Error(data.message || 'Não foi possível verificar o status do sistema.'); if (data.usersExist) { window.location.replace('index.html'); return; } attachSetupFormListener(); } catch (error) { attachSetupFormListener(); setToast(error.message || 'Não foi possível conectar ao servidor.', 'error'); }
+        try {
+          const response = await ApiClient.fetch('/status', { cache: 'no-store' });
+          const data = await parseJson(response);
+          if (!response.ok) throw new Error(data.message || 'Não foi possível verificar o status do sistema.');
+
+          // Se já existem usuários, vai para o login
+          if (data.usersExist) { window.location.replace('index.html'); return; }
+
+          attachSetupFormListener();
+        } catch (error) {
+          // Se der erro (ex: sem conexão), libera o form para tentar mesmo assim
+          attachSetupFormListener();
+          setToast(error.message || 'Não foi possível conectar ao servidor.', 'error');
+        }
       };
+
       attachSetupFormListener();
       checkStatusAndSetup();
     });
   </script>
 </body>
+
 </html>

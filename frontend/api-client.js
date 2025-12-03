@@ -53,7 +53,7 @@
     if (error && (error.message?.includes('Failed to fetch') || error.name === 'TypeError')) {
       return new Error('Não foi possivel conectar ao servidor. Verifique se o back-end esta em execução.');
     }
-    return error || new Error('Nao foi possivel completar a requisicao.');
+    return error || new Error('Não foi possivel completar a requisição.');
   };
 
   let cachedBaseUrl = null;

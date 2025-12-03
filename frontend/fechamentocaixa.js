@@ -15,6 +15,24 @@ const hideLucroParaFuncionario = () => {
   const lucroLinha = document.querySelector('[data-lucro-final]');
   if (lucroLinha) lucroLinha.style.display = 'none';
 };
+const normalizarSangria = (dados = {}) => {
+  const parseNum = (v) => {
+    if (v == null || v === '') return NaN;
+    if (typeof v === 'string') {
+      const norm = v.replace(/\./g, '').replace(',', '.');
+      const num = Number(norm);
+      if (Number.isFinite(num)) return num;
+    }
+    return Number(v);
+  };
+  const candidatos = [dados.sangriasSaida, dados.sangrias, dados.sangria, dados.sangriasAbsoluto, dados.sangriaAbsoluto];
+  const bruto = candidatos
+    .map(parseNum)
+    .find((n) => Number.isFinite(n) && Math.abs(n) > 0) || 0;
+  const absoluto = Math.abs(bruto);
+  const saida = absoluto ? -absoluto : 0;
+  return { saida, absoluto };
+};
 
 const formEls = {
   data: document.getElementById('data-fechamento'),
@@ -119,13 +137,14 @@ const renderResumoEsperado = (dados) => {
   const lucroVendas = document.getElementById('val-lucro-vendas');
   const lucroDescontos = document.getElementById('val-lucro-descontos');
   const totalVendas = Number(dados.vendasDinheiro || 0) + Number(dados.vendasCartao || 0);
-  const sangriasValor = Math.abs(Number(dados.sangriasAbsoluto ?? dados.sangrias ?? dados.sangriasSaida ?? 0));
+  const { saida: sangriasSaida, absoluto: sangriasValor } = normalizarSangria(dados);
   const descontos = sangriasValor + Math.abs(Number(dados.devolucoes || 0));
 
   document.getElementById('val-suprimento').textContent = formatarMoeda(dados.suprimentos);
   document.getElementById('val-vendas-dinheiro').textContent = formatarMoeda(dados.vendasDinheiro);
   document.getElementById('val-vendas-cartao').textContent = formatarMoeda(dados.vendasCartao);
-  document.getElementById('val-sangrias').textContent = formatarMoeda(-sangriasValor);
+  const sangriaDisplay = -Math.abs(sangriasSaida || sangriasValor || 0);
+  document.getElementById('val-sangrias').textContent = formatarMoeda(sangriaDisplay);
   const devolTotal = Number.isFinite(dados.devolucoes)
     ? Number(dados.devolucoes)
     : (Number(dados.devolucoesDinheiro || 0) + Number(dados.devolucoesCartao || 0));
@@ -177,9 +196,8 @@ const renderDiferencas = () => {
   document.getElementById('status-geral-resumo').textContent = statusResumo.texto;
   document.getElementById('status-geral-resumo').className = `pill-status ${statusResumo.classe}`;
 
-  const podeFinalizar = resumoEsperado && (Number.isFinite(difGeral) || Number.isFinite(difDinheiro));
-  const temContagem = (dinheiroContado + cartaoExtrato) > 0 || (esperadoDinheiro + esperadoCartao) > 0;
-  formEls.btnFinalizar.disabled = !(podeFinalizar && temContagem);
+  const podeFinalizar = !!resumoEsperado;
+  formEls.btnFinalizar.disabled = !podeFinalizar;
   formEls.hint.textContent = formEls.btnFinalizar.disabled
     ? 'Preencha os valores contados para habilitar o fechamento.'
     : 'Revise as diferenças antes de finalizar.';
@@ -205,45 +223,52 @@ const carregarResumo = async () => {
 
     if (!response.ok) {
       const erro = await response.json().catch(() => ({}));
-      throw new Error(erro.message || 'NÃ£o foi possível carregar o resumo.');
+      throw new Error(erro.message || 'Não foi possível carregar o resumo.');
     }
 
     const dados = await response.json();
-    const trocoAjuste = Number.isFinite(dados.ajusteTroco) ? Number(dados.ajusteTroco) : lerTrocoDelta(); // sobra/falta de troco acumulada
+    const trocoAjuste = Number.isFinite(dados.ajusteTroco) ? Number(dados.ajusteTroco) : lerTrocoDelta();
 
-    // esperado do backend jÃ¡ inclui suprimentos + vendasDinheiro - devoluÃ§Ãµes - sangrias
-    const esperadoCaixaDinheiro = Number(dados.esperadoCaixaDinheiro || 0);
-    const esperadoGeral = Number(dados.esperadoGeral || 0);
+    // Normaliza sangrias para garantir valores absolutos e de saída
+    const { saida: rawSangriaSaida, absoluto: sangriasValor } = normalizarSangria(dados);
+    const sangriasSaida = rawSangriaSaida <= 0 ? rawSangriaSaida : -Math.abs(rawSangriaSaida);
+
+    // Valores individuais
+    const suprimentos = Number(dados.suprimentos || 0);
+    const vendasDinheiro = Number(dados.vendasDinheiro || 0);
+    const vendasCartao = Number(dados.vendasCartao || 0);
+    const devolucoesDinheiro = Number(dados.devolucoesDinheiro || 0);
+
+    // CORREÇÃO PRINCIPAL: Recalcula o Esperado no Frontend
+    // Força a subtração da sangria (sangriasValor) e devoluções em dinheiro
+    // Ignora o dados.esperadoCaixaDinheiro que vinha do backend incorreto
+    const esperadoCaixaDinheiro = suprimentos + vendasDinheiro - devolucoesDinheiro - sangriasValor;
+    const esperadoGeral = esperadoCaixaDinheiro + vendasCartao;
+
     const devolTotal = Number.isFinite(dados.devolucoes)
       ? Number(dados.devolucoes)
-      : (Number(dados.devolucoesDinheiro || 0) + Number(dados.devolucoesCartao || 0));
-    const sangriasValor = Number.isFinite(dados.sangriasAbsoluto)
-      ? Math.abs(dados.sangriasAbsoluto)
-      : Number.isFinite(dados.sangriasSaida)
-        ? Math.abs(dados.sangriasSaida)
-        : Math.abs(Number(dados.sangrias || 0));
-    const lucroTeorico = Number(dados.vendasDinheiro || 0)
-      + Number(dados.vendasCartao || 0)
-      - devolTotal
-      - sangriasValor;
+      : (devolucoesDinheiro + Number(dados.devolucoesCartao || 0));
+
+    // Lucro Teórico (Vendas - Devoluções - Sangrias)
+    const lucroTeorico = vendasDinheiro + vendasCartao - devolTotal - sangriasValor;
 
     resumoEsperado = {
-      suprimentos: Number(dados.suprimentos || 0),
-      vendasDinheiro: Number(dados.vendasDinheiro || 0),
-      vendasCartao: Number(dados.vendasCartao || 0),
-      sangrias: Number.isFinite(dados.sangrias) ? Number(dados.sangrias) : -sangriasValor,
-      sangriasSaida: Number.isFinite(dados.sangriasSaida) ? Number(dados.sangriasSaida) : -sangriasValor,
+      suprimentos,
+      vendasDinheiro,
+      vendasCartao,
+      sangrias: sangriasSaida, // Valor negativo para exibição visual
+      sangriasSaida,
       sangriasAbsoluto: sangriasValor,
       devolucoes: devolTotal,
       ajusteTroco: trocoAjuste,
       lucro: lucroTeorico,
-      esperadoCaixaDinheiro,
-      esperadoGeral,
+      esperadoCaixaDinheiro, // Usa o valor calculado aqui
+      esperadoGeral,         // Usa o valor calculado aqui
     };
 
     renderResumoEsperado(resumoEsperado);
 
-    // Preenche contagem: cartao/pix vem do extrato; dinheiro fica zerado para contagem manual
+    // Preenche contagem
     if (formEls.dinheiroContado) formEls.dinheiroContado.value = formatarMoedaInput('0');
     if (formEls.cartaoExtrato) formEls.cartaoExtrato.value = formatarMoedaInput(resumoEsperado.vendasCartao.toFixed(2));
 
@@ -366,11 +391,3 @@ document.addEventListener('DOMContentLoaded', () => {
   setResumoDataLabel();
   carregarResumo();
 });
-
-
-
-
-
-
-
-

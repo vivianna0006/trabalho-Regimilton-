@@ -92,6 +92,10 @@ if (valorInput) {
 }
 
 const normalize = (texto) => (texto || '').normalize('NFD').replace(/[^\w\s-]/g, '').toLowerCase();
+const isTamanhoUnicoCategoria = (nomeCategoria) => {
+  const alvo = normalize(nomeCategoria);
+  return ['acessorios', 'bones', 'bolsas', 'cintos'].includes(alvo);
+};
 
 const setActiveCategoriaBotao = (nome) => {
   categoriaAtiva = nome || null;
@@ -627,9 +631,10 @@ const carregarFormularioDeCategorias = () => {
     const subcategoriaSelecionada = subcategoriaSelect.value;
     if (categoriaSelecionada && subcategoriaSelecionada) {
       const isCalcado = normalize(categoriaSelecionada) === normalize('Calcados');
+      const isTamanhoUnico = isTamanhoUnicoCategoria(categoriaSelecionada);
       const tamanhos = isCalcado
         ? ['33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45']
-        : ['PP', 'P', 'M', 'G', 'GG'];
+        : (isTamanhoUnico ? ['Unico'] : ['PP', 'P', 'M', 'G', 'GG']);
       gerarInputsDeTamanho(tamanhos);
     } else {
       fieldsetTamanhos.style.display = 'none';
